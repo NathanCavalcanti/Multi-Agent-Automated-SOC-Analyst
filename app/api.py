@@ -20,9 +20,12 @@ async def analyze_incident(payload: dict):
     """
     incident = payload.get("incident", "")
 
+    # Create graph and initial state (dict, same as main.py)
     graph = create_graph()
-    state = SOCState(input_text=incident)
+    initial_state = {"input_text": incident}
 
-    output = graph.invoke(state)
+    # Invoke graph
+    # Note: For production, you should add the same error handling as in main.py
+    output = graph.invoke(initial_state)
 
-    return output.model_dump()
+    return output

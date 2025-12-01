@@ -1,4 +1,3 @@
-# agents/ioc_agent.py
 from __future__ import annotations
 
 import json
@@ -9,24 +8,24 @@ from app.config import call_llm, extract_json_block
 
 def run_ioc_agent(incident_text: str) -> Dict[str, Any]:
     """
-    Agente 1: IOC Extractor
-    Extrae IPs, dominios, URLs, hashes, emails, rutas de fichero, etc.
-    Devuelve un dict con los IOCs estructurados.
+    Agent 1: IOC Extractor
+    Extracts IPs, domains, URLs, hashes, emails, file paths, etc.
+    Returns a dictionary with structured IOCs.
     """
 
     system_prompt = (
-        "Eres un analista SOC especializado en extracción de IOCs. "
-        "Tu tarea es leer la descripción de un incidente y extraer indicadores de compromiso "
-        "(IPs, dominios, URLs, emails, hashes de malware, rutas de fichero) "
-        "en un JSON válido."
+        "You are a SOC analyst specializing in IOC extraction. "
+        "Your task is to read the incident description and extract indicators of compromise "
+        "(IPs, domains, URLs, emails, malware hashes, file paths) "
+        "into a valid JSON format."
     )
 
     user_prompt = f"""
-Texto del incidente:
+Incident text:
 
 {incident_text}
 
-Devuelve ÚNICAMENTE un JSON válido con la estructura:
+Return ONLY a valid JSON with the following structure:
 
 {{
   "ips": ["1.2.3.4", ...],
@@ -38,7 +37,7 @@ Devuelve ÚNICAMENTE un JSON válido con la estructura:
     "sha1": ["..."],
     "sha256": ["..."]
   }},
-  "file_paths": ["C:\\\\Windows\\\\System32\\\\...", "/tmp/malicioso", ...]
+  "file_paths": ["C:\\\\Windows\\\\System32\\\\...", "/tmp/malicious", ...]
 }}
 """
 
@@ -46,7 +45,8 @@ Devuelve ÚNICAMENTE un JSON válido con la estructura:
         [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
-        ]
+        ],
+        provider="gemini"  # Gemini for data extraction
     )
 
     try:
@@ -54,7 +54,7 @@ Devuelve ÚNICAMENTE un JSON válido con la estructura:
         parsed = json.loads(json_str)
     except json.JSONDecodeError:
         parsed = {
-            "parse_error": "El LLM no devolvió JSON válido",
+            "parse_error": "LLM did not return valid JSON",
             "raw_response": response,
         }
 

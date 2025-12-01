@@ -4,6 +4,7 @@ pydantic>=2.9.2
 
 # === LLM / Orquestación ===
 groq>=0.11.0
+google-generativeai>=0.3.2
 langchain>=0.3.0
 langgraph>=0.1.15
 

@@ -13,10 +13,10 @@ def _build_cve_keywords_with_llm(
     mitre_context: Optional[Dict[str, Any]] = None,
 ) -> List[str]:
     """
-    Usa el LLM para extraer palabras clave de producto/tecnología
-    a partir del texto del incidente y del contexto MITRE.
+    Uses the LLM to extract product/technology keywords
+    from the incident text and MITRE context.
 
-    Ejemplo de salida:
+    Example output:
     ["Microsoft Office", "Windows 10", "Microsoft Edge"]
     """
 
@@ -28,26 +28,26 @@ def _build_cve_keywords_with_llm(
             mitre_snippet = str(mitre_context)
 
     system_prompt = (
-        "Eres un analista de vulnerabilidades. "
-        "A partir de la descripción de un incidente y del contexto MITRE, "
-        "debes extraer nombres de productos/tecnologías relevantes para buscar CVEs en NVD. "
-        "No inventes versiones si no están claras; céntrate en producto y fabricante."
+        "You are a vulnerability analyst. "
+        "Based on an incident description and MITRE context, "
+        "you must extract relevant product/technology names to search for CVEs in NVD. "
+        "Do not invent versions if they are not clear; focus on product and vendor."
     )
 
     user_prompt = f"""
-Texto del incidente / software afectado:
+Incident text / affected software:
 {software_info}
 
-Contexto MITRE (JSON):
+MITRE Context (JSON):
 {mitre_snippet}
 
-Devuelve ÚNICAMENTE un JSON con esta estructura:
+Return ONLY a JSON with this structure:
 
 {{
   "keywords": [
-    "Producto1",
-    "Producto2",
-    "Producto3"
+    "Product1",
+    "Product2",
+    "Product3"
   ]
 }}
 """
@@ -56,7 +56,8 @@ Devuelve ÚNICAMENTE un JSON con esta estructura:
         [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
-        ]
+        ],
+        provider="gemini"  # Gemini for keyword extraction
     )
 
     try:
@@ -75,14 +76,14 @@ def run_cve_agent(
     mitre_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Agente 3: CVE Retriever (versión realista con NVD)
+    Agent 3: CVE Retriever (Realistic version with NVD)
 
-    1) Usa el LLM para extraer palabras clave de tecnología/producto.
-    2) Llama a la API de NVD con esas keywords.
-    3) Devuelve CVEs reales (id, cvss, description) y anota la keyword usada.
+    1) Uses LLM to extract technology/product keywords.
+    2) Calls NVD API with those keywords.
+    3) Returns real CVEs (id, cvss, description) and annotates the used keyword.
 
-    La lógica de mapeo con MITRE (related_techniques) se deja opcional,
-    porque NVD no devuelve MITRE directamente; se podría derivar si quieres.
+    Mapping logic with MITRE (related_techniques) is left optional,
+    as NVD does not return MITRE directly; it could be derived if needed.
     """
 
     keywords = _build_cve_keywords_with_llm(software_info, mitre_context)
@@ -92,14 +93,14 @@ def run_cve_agent(
         try:
             cves = search_cves(kw, max_results=3)
         except Exception as e:
-            # No queremos romper el flujo por un fallo de red o rate-limit
+            # We don't want to break the flow due to network or rate-limit issues
             all_cves.append(
                 {
                     "id": None,
                     "cvss": None,
-                    "description": f"Error al consultar NVD con keyword '{kw}': {e}",
+                    "description": f"Error querying NVD with keyword '{kw}': {e}",
                     "source_keyword": kw,
-                    "confidence": "baja",
+                    "confidence": "low",
                 }
             )
             continue
@@ -107,17 +108,17 @@ def run_cve_agent(
         for c in cves:
             c2 = dict(c)
             c2["source_keyword"] = kw
-            # Aquí podrías añadir heurística para related_techniques usando mitre_context
+            # Here you could add heuristics for related_techniques using mitre_context
             c2["related_techniques"] = []
-            c2["confidence"] = "media"
+            c2["confidence"] = "medium"
             all_cves.append(c2)
 
     result: Dict[str, Any] = {
         "cves": all_cves,
         "notes": (
-            "CVEs obtenidos de la API oficial de NVD usando keywords extraídas "
-            "del incidente. Es necesario revisar manualmente cuáles son realmente relevantes "
-            "para el incidente concreto."
+            "CVEs obtained from official NVD API using keywords extracted "
+            "from the incident. Manual review is required to determine relevance "
+            "to the specific incident."
         ),
     }
 

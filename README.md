@@ -1,76 +1,224 @@
-# 🛰️ SOC Multi-Agent AI Assistant – Version 1.0  
-A fully functional, terminal-based multi-agent SOC assistant built using **LangGraph**, **LangChain**, and **Groq Llama 3.3**.  
-The system performs automated triage of security incidents, including:
+# 🛡️ SOC Multi-Agent AI Assistant
 
-- IOC extraction  
-- MITRE ATT&CK technique mapping (validated against Enterprise ATT&CK)  
-- Real CVE retrieval using the **NVD API** (no hallucinations)  
-- Investigation/containment planning  
-- Full SOC-grade incident report generation (JSON + text)  
-- Output persistence under `/output/`  
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![LangGraph](https://img.shields.io/badge/LangGraph-0.1.15+-green.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-v1.0-success.svg)
 
-This application is designed as an educational and portfolio-ready SOC Automation framework.
+A fully functional, terminal-based **Security Operations Center (SOC) Multi-Agent AI Assistant** built with **LangGraph**, **LangChain**, and **Groq Llama 3.3**. This system performs automated security incident triage including IOC extraction, MITRE ATT&CK technique mapping, CVE retrieval, and comprehensive incident reporting.
+
+> 🎓 **Educational & Portfolio Project**: Demonstrates advanced AI agent orchestration, SOC automation workflows, and integration with real security data sources (NVD, MITRE ATT&CK).
 
 ---
 
-# 🚀 Features (v1.0)
+## ✨ Key Features
 
-### ✔️ **Terminal-driven (CLI) workflow**
-The app prompts the analyst to paste incident data and signal completion with the keyword:
-
-```
-END
-```
-
-The system then executes the **entire LangGraph** pipeline and prints:
-
-- A console-rendered SOC incident report  
-- Paths to generated files in `/output/`  
-  - `incident_report_YYYY-MM-DD_HH-MM-SS.txt`  
-  - `incident_report_YYYY-MM-DD_HH-MM-SS.json`  
+- 🔍 **IOC Extraction** - Automatically identifies IPs, domains, URLs, file hashes, emails, and file paths
+- 🎯 **MITRE ATT&CK Mapping** - Maps techniques validated against official Enterprise ATT&CK framework
+- 🔐 **Real CVE Intelligence** - Fetches actual vulnerabilities from **NVD API** (no hallucinations)
+- 📋 **DFIR Planning** - Generates investigation and containment action plans
+- 📊 **SOC-Grade Reports** - Produces structured JSON and human-readable text reports
+- 💾 **Persistent Output** - All reports saved with timestamps under `/output/`
+- 🔄 **Multi-Agent Orchestration** - LangGraph pipeline with 5 specialized agents
 
 ---
 
-# 🔗 Multi-Agent Pipeline
-
-The LangGraph orchestrates the following agents:
+## 🏗️ Architecture
 
 ```
-ioc_agent
-→ mitre_agent
-→ cve_agent
-→ investigation_agent
-→ report_agent
-→ END
+┌─────────────────┐
+│  User Input     │
+│  (CLI)          │
+└────────┬────────┘
+         │
+         ▼
+    ┌────────┐
+    │  Graph │
+    └────┬───┘
+         │
+    ┌────▼──────────────────────────────────┐
+    │                                       │
+    │  ┌─────────────┐                     │
+    │  │ IOC Agent   │ ► Extract IPs,      │
+    │  └──────┬──────┘   domains, hashes   │
+    │         │                             │
+    │  ┌──────▼──────┐                     │
+    │  │ MITRE Agent │ ► Map techniques    │
+    │  └──────┬──────┘   (validated)       │
+    │         │                             │
+    │  ┌──────▼──────┐                     │
+    │  │  CVE Agent  │ ► Fetch CVEs        │
+    │  └──────┬──────┘   from NVD API      │
+    │         │                             │
+    │  ┌──────▼───────────┐                │
+    │  │ Investigation    │ ► DFIR Plan    │
+    │  │ Agent            │                │
+    │  └──────┬───────────┘                │
+    │         │                             │
+    │  ┌──────▼──────┐                     │
+    │  │ Report Agent│ ► Generate JSON/TXT │
+    │  └──────┬──────┘                     │
+    └─────────┼─────────────────────────────┘
+              │
+              ▼
+      ┌─────────────────────────┐
+      │ /output/                │
+      │ - report_timestamp.json │
+      │ - report_timestamp.txt  │
+      └─────────────────────────┘
 ```
 
-Each agent updates the global **SOCState** object.
+**Agent Pipeline**: `IOC → MITRE → CVE → Investigation → Report → END`
 
 ---
 
-# 🛠 Usage
+## 📋 Prerequisites
 
-Run the CLI:
+- **Python 3.10+**
+- **Groq API Key** (free tier available at [console.groq.com](https://console.groq.com))
+- **Gemini API Key** (free tier available at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey))
+- **Optional**: NVD API Key for higher rate limits ([nvd.nist.gov/developers](https://nvd.nist.gov/developers/request-an-api-key))
 
+---
+
+## 🚀 Installation
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/yourusername/soc-multiagent-assistant
+cd soc-multiagent-assistant
 ```
+
+### 2. Create Virtual Environment
+
+```bash
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+
+# Linux/Mac
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure Environment Variables
+
+```bash
+# Copy template
+copy .env.example .env   # Windows
+# cp .env.example .env   # Linux/Mac
+
+# Edit .env and add your GROQ_API_KEY
+```
+
+**Required in `.env`:**
+```bash
+GROQ_API_KEY=your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+---
+
+## 💻 Usage
+
+### Run the CLI Assistant
+
+```bash
 python app/main.py
 ```
 
-Paste logs or alert:
+### Example Workflow
 
+1. **Paste incident data** (logs, alerts, event descriptions)
+2. **Type `END`** to signal completion
+3. **Wait for analysis** (multi-agent pipeline executes)
+4. **Review output** in console + `/output/` directory
+
+**Example Input:**
 ```
 Suspicious PowerShell execution detected:
 powershell -enc KABDA...
+Source IP: 192.168.1.100
+Target: malicious-domain.com
 END
 ```
 
-Output:
-
-- Full structured SOC report  
-- Path to JSON + TXT under `/output/`
+**Output:**
+- Console: Structured SOC incident report
+- Files: 
+  - `output/incident_report_2024-12-01_19-30-45.txt`
+  - `output/incident_report_2024-12-01_19-30-45.json`
 
 ---
 
-# 🔥 Version  
-**Current release: v1.0**
+## 📁 Project Structure
 
+```
+soc-multiagent-assistant/
+├── agents/                    # Specialized SOC agents
+│   ├── ioc_agent.py          # IOC extraction
+│   ├── mitre_agent.py        # MITRE ATT&CK mapping
+│   ├── cve_agent.py          # CVE intelligence
+│   ├── investigation_agent.py # DFIR planning
+│   └── report_agent.py       # Report generation
+├── app/
+│   ├── config.py             # LLM configuration
+│   ├── main.py               # CLI entry point
+│   └── api.py                # FastAPI server (optional)
+├── graph/
+│   ├── graph_builder.py      # LangGraph pipeline
+│   └── state.py              # Shared state management
+├── integrations/
+│   ├── mitre_local_db.py     # MITRE ATT&CK data handler
+│   └── nvd_client.py         # NVD API client
+├── data/                      # MITRE ATT&CK dataset (auto-downloaded)
+├── output/                    # Generated reports
+├── .env.example               # Environment template
+└── requirements.txt
+```
+
+---
+
+## 🛠️ Technology Stack
+
+- **Orchestration**: [LangGraph](https://github.com/langchain-ai/langgraph) (Multi-agent state management)
+- **LLM**: 
+  - **Gemini 1.5 Flash** - Data extraction agents (IOC, MITRE, CVE)
+  - **Groq Llama 3.3 70B** - Analysis agents (Investigation, Reports)
+- **Data Sources**: 
+  - [MITRE ATT&CK](https://attack.mitre.org/) Enterprise framework
+  - [NVD API 2.0](https://nvd.nist.gov/developers) for CVE data
+- **Framework**: Python 3.10+ with Pydantic, LangChain
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - feel free to use it for learning and portfolio purposes.
+
+---
+
+## 🙏 Acknowledgments
+
+- **MITRE Corporation** - ATT&CK Framework
+- **NIST** - National Vulnerability Database
+- **Groq** - Fast LLM inference
+
+---
+
+## 🔗 Resources
+
+- [MITRE ATT&CK Enterprise Matrix](https://attack.mitre.org/matrices/enterprise/)
+- [NVD API Documentation](https://nvd.nist.gov/developers/vulnerabilities)
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
+
+---
+
+**Version**: 1.0 | **Status**: Production-ready for portfolio demonstration

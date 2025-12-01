@@ -17,19 +17,19 @@ def run_investigation_agent(
     cve_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Agente 4: DFIR Planner / Investigation Agent
+    Agent 4: DFIR Planner / Investigation Agent
 
-    Firma flexible para adaptarse a las llamadas desde el grafo:
+    Flexible signature to adapt to graph calls:
 
-    - Algunos grafos pasan `event_text=...`
-    - Otros pueden pasar `incident_text=...`
-    - MITRE puede llegar como `ttps` o como `mitre_context`
-    - CVEs pueden llegar como `cves` o como `cve_context`
+    - Some graphs pass `event_text=...`
+    - Others might pass `incident_text=...`
+    - MITRE can arrive as `ttps` or `mitre_context`
+    - CVEs can arrive as `cves` or `cve_context`
 
-    Devuelve un dict con un plan de investigación y contención.
+    Returns a dict with an investigation and containment plan.
     """
 
-    # Unificar nombres de parámetros
+    # Unify parameter names
     text = incident_text or event_text or ""
     mitre_data: Optional[Dict[str, Any]] = mitre_context or ttps
     cve_data: Optional[Dict[str, Any]] = cve_context or cves
@@ -39,49 +39,49 @@ def run_investigation_agent(
     cve_snippet = json.dumps(cve_data, ensure_ascii=False) if cve_data else "{}"
 
     system_prompt = (
-        "Eres un analista DFIR senior en un SOC. "
-        "A partir de la descripción del incidente/evento, de los IOCs, del mapeo MITRE "
-        "y de las vulnerabilidades (CVEs), debes proponer un plan de investigación "
-        "y respuesta estructurado, orientado a un L1/L2."
+        "You are a Senior DFIR Analyst in a SOC. "
+        "Based on the incident/event description, IOCs, MITRE mapping, "
+        "and vulnerabilities (CVEs), you must propose a structured investigation "
+        "and response plan, oriented towards L1/L2 analysts."
     )
 
     user_prompt = f"""
-Descripción del incidente / evento:
+Incident / Event description:
 {text}
 
-IOCs extraídos:
+Extracted IOCs:
 {ioc_snippet}
 
-Contexto MITRE (TTPs):
+MITRE Context (TTPs):
 {mitre_snippet}
 
-Contexto CVEs:
+CVE Context:
 {cve_snippet}
 
-Devuelve ÚNICAMENTE un JSON válido con la estructura:
+Return ONLY a valid JSON with the following structure:
 
 {{
   "investigation_steps": [
     {{
       "step": 1,
-      "category": "Recolección de artefactos",
-      "description": "Descripción detallada de la acción.",
+      "category": "Artifact Collection",
+      "description": "Detailed action description.",
       "tools": ["Splunk", "EDR", "Volatility"],
-      "expected_outcome": "Qué se espera encontrar."
+      "expected_outcome": "What is expected to be found."
     }}
   ],
   "containment_actions": [
     {{
-      "priority": "alta",
-      "description": "Acción de contención.",
+      "priority": "high",
+      "description": "Containment action.",
       "depends_on": [1]
     }}
   ],
   "eradication_and_recovery": [
-    "Acción de erradicación 1",
-    "Acción de recuperación 1"
+    "Eradication action 1",
+    "Recovery action 1"
   ],
-  "notes": "Notas adicionales (por ejemplo, comunicación, reporting, etc.)."
+  "notes": "Additional notes (e.g., communication, reporting, etc.)."
 }}
 """
 
@@ -97,7 +97,7 @@ Devuelve ÚNICAMENTE un JSON válido con la estructura:
         parsed = json.loads(json_str)
     except json.JSONDecodeError:
         parsed = {
-            "parse_error": "El LLM no devolvió JSON válido",
+            "parse_error": "LLM did not return valid JSON",
             "raw_response": response,
         }
 

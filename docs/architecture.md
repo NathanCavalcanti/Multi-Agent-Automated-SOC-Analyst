@@ -10,7 +10,10 @@ The application is a terminal-based SOC triage system built on:
 
 - **LangGraph** → deterministic multi-agent workflows  
 - **LangChain** → LLM tool abstraction  
-- **Groq Llama 3.3** → free and ultra-fast inference  
+- **LangGraph** → deterministic multi-agent workflows  
+- **LangChain** → LLM tool abstraction  
+- **Groq Llama 3.3** → Reasoning & Reporting (Analysis)
+- **Google Gemini 2.0 Flash** → Data Extraction (IOCs, MITRE, CVEs)  
 - **Local/offline validated datasets**:
   - MITRE ATT&CK Enterprise  
   - Sigma rules  

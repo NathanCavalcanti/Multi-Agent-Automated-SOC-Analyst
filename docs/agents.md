@@ -7,7 +7,7 @@ This document describes each agent’s role and responsibilities.
 # 1. IOC Agent (agents/ioc_agent.py)
 
 ### Model  
-`llama-3.3-8b` (Groq)
+`gemini-2.0-flash` (Google Gemini)
 
 ### Responsibilities  
 Extract strictly-structured JSON:
@@ -30,7 +30,7 @@ Guaranteed JSON block extracted using a sanitizing function.
 # 2. MITRE Agent (agents/mitre_agent.py)
 
 ### Model  
-`llama-3.3-70b-versatile`
+`gemini-2.0-flash` (Google Gemini)
 
 ### Steps  
 
@@ -52,7 +52,7 @@ Guaranteed JSON block extracted using a sanitizing function.
 # 3. CVE Agent (agents/cve_agent.py)
 
 ### Model  
-`llama-3.3-70b-versatile`
+`gemini-2.0-flash` (Google Gemini)
 
 ### Steps  
 1. LLM extracts product keywords  
@@ -71,7 +71,7 @@ id, cvss, description, source_keyword, confidence
 # 4. Investigation Agent (agents/investigation_agent.py)
 
 ### Model  
-`mixtral-8x7b`
+`llama-3.3-70b-versatile` (Groq)
 
 ### Generates  
 - Investigation steps  

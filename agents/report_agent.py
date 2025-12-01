@@ -15,13 +15,13 @@ def run_report_agent(
     investigation_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Agente 5: Report Agent
-    Genera un informe estructurado (en JSON) a partir de:
-    - Descripción del incidente
+    Agent 5: Report Agent
+    Generates a structured report (in JSON) based on:
+    - Incident description
     - IOCs
-    - Mapeo MITRE
-    - CVEs relevantes
-    - Plan de investigación / respuesta
+    - MITRE mapping
+    - Relevant CVEs
+    - Investigation / response plan
     """
 
     ioc_snippet = json.dumps(iocs, ensure_ascii=False) if iocs else "{}"
@@ -34,45 +34,45 @@ def run_report_agent(
     )
 
     system_prompt = (
-        "Eres un analista SOC L2 encargado de redactar informes de incidentes. "
-        "Debes generar un informe claro, estructurado y accionable para un entorno SOC, "
-        "separando una parte ejecutiva (para managers) y una parte técnica (para analistas). "
-        "Utiliza un tono profesional y conciso."
+        "You are an L2 SOC Analyst responsible for writing incident reports. "
+        "You must generate a clear, structured, and actionable report for a SOC environment, "
+        "separating an executive section (for managers) and a technical section (for analysts). "
+        "Use a professional and concise tone."
     )
 
     user_prompt = f"""
-Descripción original del incidente:
+Original incident description:
 {incident_text}
 
 IOCs (JSON):
 {ioc_snippet}
 
-Contexto MITRE (JSON):
+MITRE Context (JSON):
 {mitre_snippet}
 
-Contexto CVEs (JSON):
+CVE Context (JSON):
 {cve_snippet}
 
-Plan de investigación / respuesta (JSON):
+Investigation / Response Plan (JSON):
 {investigation_snippet}
 
-Genera ÚNICAMENTE un JSON válido con la siguiente estructura:
+Generate ONLY a valid JSON with the following structure:
 
 {{
   "metadata": {{
-    "title": "Incidente de posible compromiso por malware",
-    "severity": "alta",
-    "status": "en_investigacion",
+    "title": "Incident Title",
+    "severity": "high",
+    "status": "under_investigation",
     "tlp": "TLP:AMBER",
-    "detected_by": "SOC L1 - alerta SIEM",
-    "environment": "producción"
+    "detected_by": "SOC L1 - SIEM alert",
+    "environment": "production"
   }},
-  "executive_summary": "Resumen en 5-8 líneas, orientado a responsables no técnicos.",
-  "technical_summary": "Resumen técnico del ataque, vectores, IOCs, MITRE y CVEs.",
+  "executive_summary": "Summary in 5-8 lines, oriented to non-technical managers.",
+  "technical_summary": "Technical summary of the attack, vectors, IOCs, MITRE, and CVEs.",
   "timeline": [
     {{
       "timestamp": "2025-11-30T08:14:00Z",
-      "event": "Primera alerta SIEM por tráfico sospechoso a IP maliciosa."
+      "event": "First SIEM alert for suspicious traffic to malicious IP."
     }}
   ],
   "ioc_section": {{
@@ -93,38 +93,38 @@ Genera ÚNICAMENTE un JSON válido con la siguiente estructura:
       "name": "Command Shell",
       "tactic": "Execution",
       "tactic_id": "TA0002",
-      "justification": "Breve explicación de por qué aplica."
+      "justification": "Brief explanation of why it applies."
     }}
   ],
   "cve_section": [
     {{
       "id": "CVE-XXXX-YYYY",
       "cvss": 9.8,
-      "description": "Resumen de la vulnerabilidad.",
+      "description": "Vulnerability summary.",
       "related_techniques": ["T1059.001"],
-      "confidence": "alta"
+      "confidence": "high"
     }}
   ],
   "investigation_summary": [
-    "Lista breve de las acciones de investigación realizadas / planificadas."
+    "Brief list of investigation actions performed / planned."
   ],
   "containment_and_recovery": {{
     "containment_actions": [
-      "Aislar host afectado de la red corporativa."
+      "Isolate affected host from corporate network."
     ],
     "eradication": [
-      "Reinstalar la máquina o limpiar artefactos maliciosos según playbook."
+      "Reimage machine or clean malicious artifacts according to playbook."
     ],
     "recovery": [
-      "Reincorporar sistemas a producción tras validar integridad."
+      "Return systems to production after validating integrity."
     ]
   }},
   "recommendations": {{
     "short_term": [
-      "Acciones inmediatas de mejora."
+      "Immediate improvement actions."
     ],
     "long_term": [
-      "Medidas estratégicas de largo plazo."
+      "Strategic long-term measures."
     ]
   }}
 }}
@@ -142,7 +142,7 @@ Genera ÚNICAMENTE un JSON válido con la siguiente estructura:
         parsed = json.loads(json_str)
     except json.JSONDecodeError:
         parsed = {
-            "parse_error": "El LLM no devolvió JSON válido",
+            "parse_error": "LLM did not return valid JSON",
             "raw_response": response,
         }
 
@@ -151,8 +151,8 @@ Genera ÚNICAMENTE un JSON válido con la siguiente estructura:
 
 def render_report_text(report: Dict[str, Any]) -> str:
     """
-    Convierte el JSON del informe en un texto plano estructurado,
-    listo para copiar en un ticket, documento o correo.
+    Converts the report JSON into structured plain text,
+    ready to be copied into a ticket, document, or email.
     """
 
     meta = report.get("metadata", {})

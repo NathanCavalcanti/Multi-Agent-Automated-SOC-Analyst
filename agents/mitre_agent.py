@@ -13,73 +13,74 @@ def run_mitre_agent(
     iocs: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Agente 2: MITRE/TTP Mapper (versión híbrida LLM + base MITRE oficial)
+    Agent 2: MITRE/TTP Mapper (Hybrid version: LLM + Official MITRE DB)
 
-    Flujo:
-    1) El LLM propone una lista de técnicas por ID (Txxxx / Txxxx.xx) + justificación.
-    2) Se enriquece cada ID con nombre, táctica y tactic_id usando el dataset oficial
-       enterprise-attack.json de MITRE.
-    3) Se devuelve un dict:
+    Flow:
+    1) LLM proposes a list of techniques by ID (Txxxx / Txxxx.xx) + justification.
+    2) Each ID is enriched with name, tactic, and tactic_id using the official
+       MITRE enterprise-attack.json dataset.
+    3) Returns a dict:
        {
-         "techniques": [...enriquecidas...],
-         "summary": "Resumen breve..."
+         "techniques": [...enriched...],
+         "summary": "Brief summary..."
        }
     """
 
     ioc_snippet = json.dumps(iocs, ensure_ascii=False) if iocs else "{}"
 
     system_prompt = (
-        "Eres un analista de ciberseguridad experto en MITRE ATT&CK. "
-        "A partir de la descripción del incidente y de los IOCs, identifica las técnicas "
-        "y sub-técnicas más probables (ID Txxxx / Txxxx.xx). "
-        "NO inventes IDs; usa solo IDs válidos de MITRE ATT&CK Enterprise. "
-        "No des nombres ni tácticas, solo IDs y justificación: el sistema las enriquecerá después."
+        "You are a cybersecurity analyst expert in MITRE ATT&CK. "
+        "Based on the incident description and IOCs, identify the most probable techniques "
+        "and sub-techniques (ID Txxxx / Txxxx.xx). "
+        "Do NOT invent IDs; use only valid MITRE ATT&CK Enterprise IDs. "
+        "Do not provide names or tactics, only IDs and justification: the system will enrich them later."
     )
 
     user_prompt = f"""
-Descripción del incidente:
+Incident description:
 
 {incident_text}
 
-IOCs extraídos (JSON):
+Extracted IOCs (JSON):
 
 {ioc_snippet}
 
-Devuelve ÚNICAMENTE un JSON válido con la estructura:
+Return ONLY a valid JSON with the following structure:
 
 {{
   "techniques": [
     {{
       "id": "T1059.001",
-      "justification": "Explica brevemente por qué esta técnica aplica"
+      "justification": "Briefly explain why this technique applies"
     }}
   ],
-  "summary": "Resumen en 3-5 líneas del patrón MITRE observado."
+  "summary": "Summary in 3-5 lines of the observed MITRE pattern."
 }}
 """
 
-    # 1) Llamada al modelo para obtener IDs + justificación
+    # 1) Call model to get IDs + justification
     response = call_llm(
         [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
-        ]
+        ],
+        provider="gemini"  # Gemini for technique extraction
     )
 
     try:
         json_str = extract_json_block(response)
         parsed = json.loads(json_str)
     except json.JSONDecodeError:
-        # Respuesta no parseable → devolvemos objeto mínimo de error
+        # Unparseable response -> return minimal error object
         return {
-            "parse_error": "El LLM no devolvió JSON válido",
+            "parse_error": "LLM did not return valid JSON",
             "raw_response": response,
         }
 
     raw_techniques = parsed.get("techniques", [])
     summary = parsed.get("summary", "")
 
-    # Normalizar estructura mínima
+    # Normalize minimal structure
     norm_techniques = []
     for t in raw_techniques:
         if not isinstance(t, dict):
@@ -94,7 +95,7 @@ Devuelve ÚNICAMENTE un JSON válido con la estructura:
             }
         )
 
-    # 2) Enriquecer contra la base MITRE oficial local
+    # 2) Enrich against local official MITRE DB
     enriched = enrich_techniques(norm_techniques)
 
     return {
