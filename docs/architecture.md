@@ -1,62 +1,113 @@
-# 🏛️ Architecture — SOC Multi-Agent AI Assistant (Groq Edition)
+# 🏛️ Architecture – SOC Multi-Agent AI Assistant (v1.0)
 
-This system is built on:
-
-- **LangChain** → Tools + Agents  
-- **LangGraph** → Multi-agent orchestration  
-- **GroqCloud Llama 3.1** → Main LLM provider  
-- **ChromaDB** → Vectorstore for MITRE & CVE  
-- **FastAPI** → API interface  
+This document provides the full technical architecture of the system.
 
 ---
 
-# 1. LLM Layer (Groq)
+# 1. Core Architecture
 
-The framework uses Groq’s ultra-fast models:
+The application is a terminal-based SOC triage system built on:
 
-| Component | Model |
-|----------|--------|
-| IOC Extraction | llama3-8b-8192 |
-| MITRE Mapping | llama3-70b-8192 |
-| CVE Intelligence | llama3-70b-8192 |
-| DFIR Planning | mixtral-8x7b |
-| Report Generation | llama3-70b |
-
----
-
-# 2. Multi-Agent Pipeline
-
-```
-User Input
-   ↓
-Agent 1 – IOC Extractor (Groq Llama3-8B)
-   ↓
-Agent 2 – MITRE/TTP Mapper (Groq Llama3-70B)
-   ↓
-Agent 3 – CVE Retriever (Groq)
-   ↓
-Agent 4 – DFIR Planner (Mixtral)
-   ↓
-Agent 5 – Report Writer (Groq Llama3-70B)
-```
+- **LangGraph** → deterministic multi-agent workflows  
+- **LangChain** → LLM tool abstraction  
+- **Groq Llama 3.3** → free and ultra-fast inference  
+- **Local/offline validated datasets**:
+  - MITRE ATT&CK Enterprise  
+  - Sigma rules  
+  - NVD CVE retrieval  
 
 ---
 
-# 3. API Integration
-
-A FastAPI service exposes:
+# 2. LangGraph Pipeline
 
 ```
-POST /api/process_incident
+[SOCState]
+   ↓
+ioc_agent
+   ↓
+mitre_agent
+   ↓
+cve_agent
+   ↓
+investigation_agent
+   ↓
+report_agent
+   ↓
+END
 ```
+
+Each node writes to the shared **SOCState**, which holds:
+
+- input_text  
+- iocs  
+- ttps (MITRE)  
+- cves  
+- investigation_plan  
+- report  
+- timestamps  
 
 ---
 
-# 4. External Integrations (Future)
+# 3. External Integrations
 
-Compatible with:
+## 3.1 MITRE ATT&CK Loader  
+Module: `integrations/mitre_local_db.py`
 
-- n8n  
-- Suricata  
-- Wazuh  
-- Splunk > HTTP Event Collector  
+- Downloads `enterprise-attack.json` from GitHub ATT&CK repository.
+- If offline, falls back to `data/enterprise-attack.json`.
+- Maps:
+  - Technique ID → name, tactic, platforms  
+  - Tactic → TAxxxx  
+- Marks each TTP as:
+  - `"source": "Enterprise MITRE"`  
+  - `"source": "LLM supposition"`  
+
+---
+
+## 3.2 NVD Client (Real CVE Data)
+
+Module: `integrations/nvd_client.py`
+
+Provides:
+
+```
+search_cves(keyword, max_results=5)
+```
+
+Returns real:
+
+- CVE ID  
+- CVSS 3.x score  
+- Description  
+- Source keyword  
+- Confidence score  
+
+This prevents AI hallucinations.
+
+---
+
+# 4. Output Persistence
+
+Every execution creates:
+
+```
+output/incident_report_YYYY-MM-DD_HH-MM-SS.json
+output/incident_report_YYYY-MM-DD_HH-MM-SS.txt
+```
+
+Stored as immutable analysis evidence.
+
+---
+
+# 5. Execution Flow
+
+1. User starts CLI
+2. Pastes incident until `END`
+3. The graph runs sequentially
+4. Output printed + saved to disk
+
+---
+
+# 6. Version
+
+**SOC Multi-Agent AI Assistant v1.0**

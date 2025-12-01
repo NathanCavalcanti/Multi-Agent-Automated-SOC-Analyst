@@ -1,50 +1,32 @@
-# 🌐 API — SOC Multi-Agent Assistant (Groq Edition)
+# 🌐 API – SOC Multi-Agent AI Assistant (v1.0)
 
-## Endpoint
-
-### POST `/api/process_incident`
-
-Executes the full LangGraph multi-agent pipeline using Groq LLMs.
+The system is CLI-first, but provides a FastAPI module for future expansion.
 
 ---
 
-## Request Example
+# 1. Main endpoint (future)
 
-```json
+POST `/api/process_incident`
+
+### Body  
+```
 {
-  "logs": "Suspicious PowerShell execution detected...",
-  "metadata": {
-    "source": "suricata",
-    "timestamp": "2025-01-01T12:00:00Z"
-  }
+  "incident_text": "...",
+  "source": "wazuh|suricata|manual"
+}
+```
+
+### Response  
+```
+{
+  "report": { ... full JSON ... }
 }
 ```
 
 ---
 
-## Response
+# 2. Current Status  
 
-```json
-{
-  "iocs": {...},
-  "mitre": [...],
-  "cves": [...],
-  "investigation": {...},
-  "report_markdown": "..."
-}
-```
+API is prepared but not yet exposed in v1.0.  
+CLI is the default interface.
 
----
-
-## Environment Variables
-
-```
-GROQ_API_KEY=your_key
-LLM_MODEL=llama-3.3-70b-versatile
-```
-
----
-
-## Notes
-
-Optimized for n8n, Wazuh, Suricata, and SIEM integrations.
