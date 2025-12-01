@@ -14,7 +14,7 @@
 
 ---
 
-# 🚧 Planned for v1.1
+# 🚧 Planned for v1.2
 
 - FastAPI HTTP UI for:
   - Suricata alerts
