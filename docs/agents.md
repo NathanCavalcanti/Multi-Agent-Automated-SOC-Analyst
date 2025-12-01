@@ -1,116 +1,43 @@
-# 🤖 Agentes del Sistema – SOC Multi-Agent AI Assistant
+# 🤖 Agents — SOC Multi-Agent AI Assistant (Groq Edition)
 
-A continuación se describe cada agente del sistema, su función, entradas y salidas, y las herramientas que utiliza.
-
----
-
-# 1. Agente 1 – IOC Extractor
-
-## Objetivo
-Extraer de forma automática todos los **Indicadores de Compromiso (IOCs)** desde un bloque de texto.
-
-## Entradas
-- Logs
-- Mensajes de alerta
-- Descripciones de incidentes
-
-## Salida (JSON)
-```json
-{
-  "ips": [],
-  "domains": [],
-  "urls": [],
-  "hashes": [],
-  "filenames": [],
-  "registry_keys": [],
-  "commands": []
-}
-```
-
-## Herramientas utilizadas
-- Regex avanzada
-- OSINT IOC Extractor (intezer/ioc-extractor)
-- Funciones LangChain
+This project uses Groq LLMs to power each specialized LLM agent.
 
 ---
 
-# 2. Agente 2 – MITRE/TTP Mapper
-
-## Objetivo
-Mapear los IOCs a técnicas MITRE ATT&CK.
-
-## Entradas
-- IOCs extraídos por el Agente 1
-
-## Salida
-Lista priorizada de técnicas:
-```json
-[
-  {"id": "T1059.001", "technique": "PowerShell"},
-  {"id": "T1105", "technique": "Ingress Tool Transfer"}
-]
-```
-
-## Herramientas utilizadas
-- Embeddings MITRE ATT&CK
-- ChromaDB
-- Similarity Search
+# 1. Agent 1 — IOC Extractor  
+**Model:** llama3-8b-8192  
+**Purpose:** extract IPs, domains, URLs, hashes, filenames, commands.
 
 ---
 
-# 3. Agente 3 – CVE & Threat Intelligence Retriever
-
-## Objetivo
-Correlacionar IOCs y técnicas MITRE con vulnerabilidades y amenazas conocidas.
-
-## Fuentes
-- NVD JSON Feed
-- CISA KEV
-- MalwareBazaar
-- ThreatFox
-- PoCs GitHub OSINT
-
-## Salida
-```json
-[
-  {
-    "cve": "CVE-2024-21413",
-    "score": 9.8,
-    "description": "Remote Code Execution..."
-  }
-]
-```
+# 2. Agent 2 — MITRE/TTP Mapper  
+**Model:** llama3-70b-8192  
+Maps evidence to MITRE ATT&CK techniques using vector embeddings.
 
 ---
 
-# 4. Agente 4 – Investigation Planner
+# 3. Agent 3 — CVE & Intelligence Retriever  
+**Model:** llama3-70b  
+Pulls relevant CVEs based on:
 
-## Objetivo
-Construir una metodología DFIR clara junto con queries y pasos recomendados.
-
-## Incluye
-- Queries Splunk, KQL, Elastic
-- Eventos relevantes (Windows/Sysmon/Linux)
-- Timeline sugerido
-- Comandos Live Response
-- Indicadores de persistencia
+- IOCs  
+- MITRE TTPs  
+- OSINT feeds  
+- CWE/CPE detection  
 
 ---
 
-# 5. Agente 5 – Report Generator
+# 4. Agent 4 — Investigation Planner  
+**Model:** mixtral-8x7b  
+Generates:
 
-## Objetivo
-Transformar todos los resultados anteriores en un **informe profesional**.
+- DFIR workflow  
+- Timeline  
+- Queries (SPL, KQL, Elastic)  
+- Sysmon / Security log correlation  
 
-### Formatos:
-- Markdown
-- PDF
+---
 
-### Estructura del informe:
-- Resumen ejecutivo
-- IOCs
-- Mapeo MITRE
-- CVEs
-- Plan de investigación
-- Recomendaciones
-
+# 5. Agent 5 — Report Writer  
+**Model:** llama3-70b  
+Creates a structured markdown/PDF security report.

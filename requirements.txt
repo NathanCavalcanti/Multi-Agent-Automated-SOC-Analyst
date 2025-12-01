@@ -1,0 +1,19 @@
+# === Core ===
+python-dotenv>=1.0.1
+pydantic>=2.9.2
+
+# === LLM / Orquestación ===
+groq>=0.11.0
+langchain>=0.3.0
+langgraph>=0.1.15
+
+# === API ===
+fastapi>=0.115.0
+uvicorn[standard]>=0.31.0
+
+# === Utils / HTTP ===
+requests>=2.32.3
+tqdm>=4.66.5
+
+# === OSINT / Scraping (si usas un agente OSINT) ===
+beautifulsoup4>=4.12.3

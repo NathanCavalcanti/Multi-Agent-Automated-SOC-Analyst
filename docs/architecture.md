@@ -1,122 +1,62 @@
-# 🏛️ Arquitectura del Sistema – SOC Multi-Agent AI Assistant
+# 🏛️ Architecture — SOC Multi-Agent AI Assistant (Groq Edition)
 
-Este documento describe la arquitectura interna del sistema, los componentes principales, la comunicación entre módulos y las tecnologías empleadas.
+This system is built on:
+
+- **LangChain** → Tools + Agents  
+- **LangGraph** → Multi-agent orchestration  
+- **GroqCloud Llama 3.1** → Main LLM provider  
+- **ChromaDB** → Vectorstore for MITRE & CVE  
+- **FastAPI** → API interface  
 
 ---
 
-# 1. Visión general
+# 1. LLM Layer (Groq)
 
-El sistema se construye sobre una arquitectura **multi-agente**, donde cada agente es responsable de una tarea separada dentro del pipeline SOC/DFIR.
+The framework uses Groq’s ultra-fast models:
 
-La orquestación se realiza mediante **LangGraph**, permitiendo un flujo determinista:
+| Component | Model |
+|----------|--------|
+| IOC Extraction | llama3-8b-8192 |
+| MITRE Mapping | llama3-70b-8192 |
+| CVE Intelligence | llama3-70b-8192 |
+| DFIR Planning | mixtral-8x7b |
+| Report Generation | llama3-70b |
+
+---
+
+# 2. Multi-Agent Pipeline
 
 ```
-│ Entrada de datos
-│      ↓
-├─ Agente 1: IOC Extractor
-│      ↓
-├─ Agente 2: MITRE Mapper
-│      ↓
-├─ Agente 3: CVE Retriever
-│      ↓
-├─ Agente 4: Investigation Planner
-│      ↓
-└─ Agente 5: Report Writer
+User Input
+   ↓
+Agent 1 – IOC Extractor (Groq Llama3-8B)
+   ↓
+Agent 2 – MITRE/TTP Mapper (Groq Llama3-70B)
+   ↓
+Agent 3 – CVE Retriever (Groq)
+   ↓
+Agent 4 – DFIR Planner (Mixtral)
+   ↓
+Agent 5 – Report Writer (Groq Llama3-70B)
 ```
 
 ---
 
-# 2. Componentes principales
+# 3. API Integration
 
-## 2.1. Backend Python
-Implementado en:
-- **LangChain**  
-- **LangGraph**  
-- **FastAPI**
+A FastAPI service exposes:
 
-El backend ejecuta los agentes, carga herramientas OSINT y sirve la API REST.
-
-## 2.2. Vectorstore (ChromaDB)
-Se utiliza un almacén de vectores para:
-- MITRE ATT&CK Enterprise JSON
-- Vulnerabilidades relevantes (CVE)
-- Glosarios SOC/DFIR
-
-## 2.3. Modelos OpenAI
-El proyecto utiliza modelos avanzados:
-- **GPT-5.1 (reasoning profundo)**
-- **GPT-4o (procesamiento eficiente y económico)**
-
----
-
-# 3. Flujo detallado del pipeline
-
-## 3.1. Ingesta
-La entrada puede provenir de:
-- Logs en texto
-- Alertas Suricata/Wazuh
-- Entradas manuales desde interfaz
-
-## 3.2. Agente 1 — IOC Extractor
-- Limpieza de texto
-- Detección de patrones
-- Uso de herramientas OSINT (interfaz en Python)
-- Normalización STIX-like
-
-## 3.3. Agente 2 — MITRE Mapper
-- Transformación de IOCs en embeddings
-- Búsqueda vectorial en MITRE ATT&CK
-- Selección de técnicas con mayor score
-
-## 3.4. Agente 3 — CVE Retriever
-- Búsqueda local en NVD JSON
-- Correlación con servicios, puertos, procesos
-- Detección de PoCs públicos en GitHub
-
-## 3.5. Agente 4 — Investigation Planner
-Genera:
-- Queries SPL, KQL y ElasticSearch
-- Pasos Live Response
-- Hipótesis analítica
-- Timeline sugerido
-
-## 3.6. Agente 5 — Report Writer
-Salida profesional:
-- Markdown
-- PDF (WeasyPrint/Pandoc)
-
----
-
-# 4. API REST
-
-El backend expone:
 ```
 POST /api/process_incident
 ```
 
-Permite integración futura con:
-- n8n
-- Wazuh
-- Suricata
-- SIEMs
-
-Ver `docs/api.md`.
-
 ---
 
-# 5. Integración con n8n
+# 4. External Integrations (Future)
 
-La arquitectura está diseñada para admitir Webhooks:
-```
-Suricata/Wazuh → n8n → LangGraph API → Informe
-```
+Compatible with:
 
----
-
-# 6. Seguridad
-
-Recomendaciones:
-- Validar tamaño de entrada
-- No permitir ejecución directa de comandos shell
-- Limitar logs sensibles
-- Aplicar rate-limiting en API
+- n8n  
+- Suricata  
+- Wazuh  
+- Splunk > HTTP Event Collector  

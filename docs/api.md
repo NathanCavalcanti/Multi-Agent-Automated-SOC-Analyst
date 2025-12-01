@@ -1,30 +1,28 @@
-# 🌐 API – SOC Multi-Agent AI Assistant
+# 🌐 API — SOC Multi-Agent Assistant (Groq Edition)
 
-El sistema expone una API REST que permite la integración con plataformas externas como n8n, Wazuh, Suricata o SIEMs.
-
----
-
-# 1. Endpoint principal
+## Endpoint
 
 ### POST `/api/process_incident`
 
-Procesa un incidente completo usando el pipeline multi-agente.
+Executes the full LangGraph multi-agent pipeline using Groq LLMs.
 
-### Body (JSON)
+---
+
+## Request Example
+
 ```json
 {
-  "logs": "texto con logs o alerta",
+  "logs": "Suspicious PowerShell execution detected...",
   "metadata": {
     "source": "suricata",
-    "alert_id": "ET MALWARE EXE Download",
-    "timestamp": "2025-01-01T10:00:00Z"
+    "timestamp": "2025-01-01T12:00:00Z"
   }
 }
 ```
 
 ---
 
-# 2. Respuesta (JSON)
+## Response
 
 ```json
 {
@@ -32,31 +30,21 @@ Procesa un incidente completo usando el pipeline multi-agente.
   "mitre": [...],
   "cves": [...],
   "investigation": {...},
-  "report_markdown": "contenido del informe"
+  "report_markdown": "..."
 }
 ```
 
 ---
 
-# 3. Integración con n8n
+## Environment Variables
 
-Ejemplo de flujo:
-
-1. Suricata → Webhook n8n  
-2. Webhook n8n → Node "HTTP Request"  
-3. Node → POST `/api/process_incident`  
-4. n8n recibe:
-   - JSON con análisis
-   - Informe Markdown  
-   - → lo envía a Slack/Teams/Jira
+```
+GROQ_API_KEY=your_key
+LLM_MODEL=llama-3.3-70b-versatile
+```
 
 ---
 
-# 4. Seguridad
+## Notes
 
-Recomendaciones:
-- Validar longitud del texto
-- Aplicar límite de peticiones
-- Deshabilitar logging sensible
-- Aplicar autenticación en producción
-
+Optimized for n8n, Wazuh, Suricata, and SIEM integrations.

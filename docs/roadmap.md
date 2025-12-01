@@ -1,64 +1,33 @@
-# 🛣️ Roadmap – SOC Multi-Agent AI Assistant
+# 🛣️ Project Roadmap — Groq Edition
 
-Este roadmap muestra el desarrollo planificado del proyecto.
+## Phase 1 — Initialization
+- [x] Replace OpenAI with Groq
+- [x] Update documentation
+- [x] Update LangChain LLM wrappers
 
----
+## Phase 2 — Agent Implementation
+- [ ] IOC Agent (Groq llama3-8b)
+- [ ] MITRE Agent (Groq llama3-70b)
+- [ ] CVE Agent (Groq llama3-70b)
+- [ ] DFIR Agent (mixtral)
+- [ ] Report Agent (llama3-70b)
 
-# ✔️ Fase 1 – Base del proyecto
-- [x] Crear documentación inicial  
-- [x] Definir arquitectura  
-- [x] Crear repositorio  
+## Phase 3 — LangGraph
+- [ ] Multi-agent graph
+- [ ] Shared state model
+- [ ] Error handling + retries
 
----
+## Phase 4 — API Layer
+- [ ] FastAPI endpoint
+- [ ] JSON schema validation
+- [ ] CLI + Web interface
 
-# 🧱 Fase 2 – Implementación de agentes
-- [ ] Agente 1 – IOC Extractor  
-- [ ] Agente 2 – MITRE Mapper  
-- [ ] Agente 3 – CVE Retriever  
-- [ ] Agente 4 – Investigation Planner  
-- [ ] Agente 5 – Report Writer  
+## Phase 5 — Integrations (Optional)
+- [ ] n8n workflow
+- [ ] Suricata/Wazuh ingestion
+- [ ] Slack/Jira/Teams reporting
 
----
-
-# 🧠 Fase 3 – Orquestación LangGraph
-- [ ] Definición del grafo  
-- [ ] Flujo determinista completo  
-- [ ] Estado del pipeline  
-- [ ] Ejecución en CLI  
-
----
-
-# 🌐 Fase 4 – API REST
-- [ ] Implementación FastAPI  
-- [ ] `/api/process_incident`  
-- [ ] Validación de entradas  
-- [ ] Devolver JSON estructurado  
-
----
-
-# 🖥️ Fase 5 – Interfaz web (opcional)
-- [ ] UI minimalista (textarea + botón)  
-- [ ] Vista del informe  
-- [ ] Exportar PDF desde navegador  
-
----
-
-# 🔗 Fase 6 – Integración con n8n (futuro)
-- [ ] Webhook n8n  
-- [ ] Automatizar ingestión Suricata/Wazuh  
-- [ ] Automatizar envío de reportes  
-
----
-
-# 🌍 Fase 7 – Traducción al inglés técnico
-- [ ] README  
-- [ ] Docs completas  
-- [ ] Ejemplos técnicos  
-
----
-
-# 📦 Fase 8 – Release
-- [ ] Crear versión 1.0  
-- [ ] Publicar en GitHub con ZIP  
-- [ ] Crear vídeo demo opcional  
-
+## Phase 6 — Release
+- [ ] EN documentation
+- [ ] GitHub Pages docs
+- [ ] Docker packaging
