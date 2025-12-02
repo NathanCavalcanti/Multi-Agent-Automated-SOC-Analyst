@@ -25,3 +25,4 @@ output/
 *.temp
 .DS_Store
 tmp/
+test*/

@@ -7,125 +7,125 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-# URL oficial de Enterprise ATT&CK en GitHub (bundle STIX)
+# Official Enterprise ATT&CK URL on GitHub (STIX bundle)
 MITRE_URL = (
     "https://raw.githubusercontent.com/mitre/cti/master/"
     "enterprise-attack/enterprise-attack.json"
 )
 
-# Ruta al fichero local en el proyecto
+# Path to the local file in the project
 DATA_PATH = (
     Path(__file__).resolve().parents[1]
     / "data"
     / "enterprise-attack.json"
 )
 
-# Estructuras en memoria
+# In-memory structures
 _TECHNIQUES_BY_ID: Dict[str, Dict[str, Any]] = {}
 _TACTICS_BY_SHORTNAME: Dict[str, Dict[str, Any]] = {}
 _LOADED: bool = False
 
 
 # ---------------------------------------------------------------------------
-# Descarga y carga del bundle MITRE
+# MITRE bundle download and loading
 # ---------------------------------------------------------------------------
 
 def _fetch_remote_bundle() -> Optional[Dict[str, Any]]:
     """
-    Intenta descargar el bundle Enterprise ATT&CK desde GitHub.
-    Si hay cualquier problema (red, GitHub, JSON inválido), devuelve None
-    y escribe un aviso en consola.
+    Attempts to download the Enterprise ATT&CK bundle from GitHub.
+    If there is any issue (network, GitHub, invalid JSON), returns None
+    and prints a warning to the console.
     """
-    print(f"[MITRE] Intentando descargar Enterprise ATT&CK desde GitHub:\n        {MITRE_URL}")
+    print(f"[MITRE] Attempting to download Enterprise ATT&CK from GitHub:\n        {MITRE_URL}")
     try:
         resp = requests.get(MITRE_URL, timeout=60)
         resp.raise_for_status()
     except requests.RequestException as e:
-        print(f"[MITRE] Aviso: no se ha podido descargar ATT&CK desde GitHub ({e}).")
+        print(f"[MITRE] Warning: could not download ATT&CK from GitHub ({e}).")
         return None
 
     try:
         data = resp.json()
     except json.JSONDecodeError as e:
-        print(f"[MITRE] Aviso: la respuesta de GitHub no es JSON válido ({e}).")
+        print(f"[MITRE] Warning: GitHub response is not valid JSON ({e}).")
         return None
 
     if "objects" not in data or not isinstance(data["objects"], list):
-        print("[MITRE] Aviso: el JSON descargado no parece un bundle ATT&CK válido (no hay 'objects').")
+        print("[MITRE] Warning: downloaded JSON does not appear to be a valid ATT&CK bundle (no 'objects').")
         return None
 
-    print(f"[MITRE] Descarga correcta desde GitHub. Objetos en bundle: {len(data['objects'])}")
+    print(f"[MITRE] Download successful from GitHub. Objects in bundle: {len(data['objects'])}")
     return data
 
 
 def _save_bundle_to_disk(data: Dict[str, Any]) -> None:
-    """Guarda el bundle en data/enterprise-attack.json."""
+    """Saves the bundle to data/enterprise-attack.json."""
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
     with DATA_PATH.open("w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"[MITRE] Bundle actualizado guardado en {DATA_PATH}")
+    print(f"[MITRE] Updated bundle saved to {DATA_PATH}")
 
 
 def _load_bundle_from_disk() -> Optional[Dict[str, Any]]:
-    """Carga el bundle desde disco si existe y es válido. Si no, devuelve None."""
+    """Loads the bundle from disk if it exists and is valid. Otherwise, returns None."""
     if not DATA_PATH.exists():
-        print(f"[MITRE] Aviso: no existe copia local en {DATA_PATH}.")
+        print(f"[MITRE] Warning: no local copy at {DATA_PATH}.")
         return None
 
     try:
         with DATA_PATH.open("r", encoding="utf-8") as f:
             data = json.load(f)
     except Exception as e:
-        print(f"[MITRE] Aviso: error leyendo la copia local ({e}).")
+        print(f"[MITRE] Warning: error reading local copy ({e}).")
         return None
 
     if "objects" not in data or not isinstance(data["objects"], list):
-        print("[MITRE] Aviso: la copia local no parece un bundle ATT&CK válido (no hay 'objects').")
+        print("[MITRE] Warning: local copy does not appear to be a valid ATT&CK bundle (no 'objects').")
         return None
 
-    print(f"[MITRE] Bundle cargado desde copia local: {DATA_PATH}")
+    print(f"[MITRE] Bundle loaded from local copy: {DATA_PATH}")
     return data
 
 
 def _load_bundle() -> Dict[str, Any]:
     """
-    Lógica de carga del bundle:
-    1) Intentar descarga desde GitHub.
-       - Si va bien -> guardar en disco y usar ese.
-    2) Si falla la descarga o es inválida:
-       - Intentar cargar copia local.
-    3) Si tampoco hay copia local válida:
-       - Lanzar error.
+    Bundle loading logic:
+    1) Attempt download from GitHub.
+       - If successful -> save to disk and use it.
+    2) If download fails or is invalid:
+       - Attempt to load local copy.
+    3) If no valid local copy exists either:
+       - Raise error.
     """
-    # 1) Intentar remoto
+    # 1) Attempt remote
     data = _fetch_remote_bundle()
     if data is not None:
-        # Guardar en disco para futuras ejecuciones offline
+        # Save to disk for future offline executions
         _save_bundle_to_disk(data)
-        print("[MITRE] Se utilizará el bundle descargado de GitHub.")
+        print("[MITRE] Using bundle downloaded from GitHub.")
         return data
 
-    # 2) Fallback a copia local
-    print("[MITRE] Aviso: se usará copia local de ATT&CK (sin conectividad a GitHub).")
+    # 2) Fallback to local copy
+    print("[MITRE] Warning: using local ATT&CK copy (no connectivity to GitHub).")
     local_data = _load_bundle_from_disk()
     if local_data is not None:
-        print("[MITRE] Bundle MITRE cargado correctamente desde copia local.")
+        print("[MITRE] MITRE bundle loaded successfully from local copy.")
         return local_data
 
-    # 3) No hay ni remoto ni local válido
+    # 3) Neither remote nor local is valid
     raise RuntimeError(
-        "[MITRE] Error crítico: no se ha podido obtener el bundle ATT&CK "
-        "ni desde GitHub ni desde una copia local. Verifica la conectividad "
-        "y que exista data/enterprise-attack.json válido."
+        "[MITRE] Critical error: could not obtain ATT&CK bundle "
+        "from GitHub or local copy. Verify connectivity "
+        "and that data/enterprise-attack.json exists and is valid."
     )
 
 
 # ---------------------------------------------------------------------------
-# Construcción de índices MITRE (tácticas y técnicas)
+# MITRE Index Construction (Tactics and Techniques)
 # ---------------------------------------------------------------------------
 
 def _load_data() -> None:
-    """Carga ATT&CK Enterprise y construye índices en memoria."""
+    """Loads Enterprise ATT&CK and builds in-memory indices."""
     global _LOADED, _TECHNIQUES_BY_ID, _TACTICS_BY_SHORTNAME
 
     if _LOADED:
@@ -134,7 +134,7 @@ def _load_data() -> None:
     bundle = _load_bundle()
     objects = bundle.get("objects", [])
 
-    # 1) Tácticas por shortname (execution, persistence, etc.)
+    # 1) Tactics by shortname (execution, persistence, etc.)
     for obj in objects:
         if obj.get("type") == "x-mitre-tactic":
             shortname = obj.get("x_mitre_shortname")
@@ -153,7 +153,7 @@ def _load_data() -> None:
                 "shortname": shortname,
             }
 
-    # 2) Técnicas por external_id (Txxxx / Txxxx.xx)
+    # 2) Techniques by external_id (Txxxx / Txxxx.xx)
     for obj in objects:
         if obj.get("type") != "attack-pattern":
             continue
@@ -192,7 +192,7 @@ def _load_data() -> None:
 
 
 def get_technique_by_id(tech_id: str) -> Optional[Dict[str, Any]]:
-    """Devuelve la técnica MITRE por ID (ej. 'T1059.001'), o None si no existe."""
+    """Returns the MITRE technique by ID (e.g. 'T1059.001'), or None if it does not exist."""
     _load_data()
     return _TECHNIQUES_BY_ID.get(tech_id)
 
@@ -201,12 +201,12 @@ def enrich_techniques(
     techniques: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
     """
-    Enriquecimiento de técnicas propuestas por el LLM con datos oficiales MITRE.
+    Enrichment of techniques proposed by the LLM with official MITRE data.
 
-    Entrada típica:
+    Typical input:
       [{"id": "T1059.001", "justification": "..."}]
 
-    Salida:
+    Output:
       [
         {
           "id": "T1059.001",
@@ -214,7 +214,7 @@ def enrich_techniques(
           "tactic_id": "TA0002",
           "tactic": "Execution",
           "justification": "...",
-          "source": "Enterprise MITRE"  # o "LLM supposition"
+          "source": "Enterprise MITRE"  # or "LLM supposition"
         },
         ...
       ]
@@ -244,7 +244,7 @@ def enrich_techniques(
                 }
             )
         else:
-            # ID no encontrado en la base MITRE (posible error / suposición del LLM)
+            # ID not found in MITRE database (possible error / LLM supposition)
             enriched.append(
                 {
                     "id": tech_id,
