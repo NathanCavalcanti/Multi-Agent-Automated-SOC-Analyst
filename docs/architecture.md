@@ -90,6 +90,20 @@ This prevents AI hallucinations.
 
 ---
 
+## 3.3 VirusTotal API (Hash Intelligence)
+
+Module: `integrations/virustotal_client.py`
+
+- **Trigger**: Automatically called by `ioc_agent` when hashes are detected.
+- **Function**: `get_file_report(hash)`
+- **Data Retrieved**:
+  - Malicious detection count (e.g., 55/70)
+  - Threat label (e.g., "trojan.win32.emotet")
+  - Sandbox verdicts
+- **Constraint**: Checks top 3 hashes to respect API rate limits.
+
+---
+
 # 4. Output Persistence
 
 Every execution creates:

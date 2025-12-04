@@ -24,6 +24,10 @@ Extract strictly-structured JSON:
 - process_names
 - user_agents
 
+### Integrations
+
+- **VirusTotal**: Automatically checks extracted hashes (MD5, SHA1, SHA256) against VirusTotal API (if configured) to retrieve detection ratios and threat labels.
+
 ### Output
 
 Guaranteed JSON block extracted using a sanitizing function.
@@ -107,6 +111,7 @@ Build a full SOC incident report:
 - IOC table
 - MITRE mapping
 - CVEs
+- VirusTotal Analysis
 - Containment
 - Recommendations
 

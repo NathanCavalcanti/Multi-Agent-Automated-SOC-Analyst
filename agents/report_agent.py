@@ -146,6 +146,12 @@ Generate ONLY a valid JSON with the following structure:
             "raw_response": response,
         }
 
+    # Manually inject VirusTotal results from input IOCs to ensure they appear
+    if iocs and "virustotal_results" in iocs:
+        if "ioc_section" not in parsed:
+            parsed["ioc_section"] = {}
+        parsed["ioc_section"]["virustotal_results"] = iocs["virustotal_results"]
+
     return parsed
 
 
@@ -224,6 +230,27 @@ def render_report_text(report: Dict[str, Any]) -> str:
     else:
         lines.append("    - N/A")
     lines.append("")
+
+    lines.append("")
+
+    # VirusTotal Analysis
+    vt_results = ioc_sec.get("virustotal_results", [])
+    if vt_results:
+        lines.append(">> VirusTotal Analysis")
+        for res in vt_results:
+            h = res.get("hash", "N/A")
+            mal = res.get("malicious", 0)
+            total = res.get("total", 0)
+            label = res.get("threat_label", "N/A")
+            verdicts = ", ".join(res.get("sandbox_verdicts", [])) or "None"
+            
+            lines.append(f"  Hash: {h}")
+            lines.append(f"    Detection: {mal}/{total}")
+            lines.append(f"    Threat Label: {label}")
+            lines.append(f"    Sandbox Verdicts: {verdicts}")
+            lines.append(f"    Link: {res.get('permalink', 'N/A')}")
+            lines.append("")
+        lines.append("")
 
     # MITRE
     lines.append(">> MITRE ATT&CK Mapping")

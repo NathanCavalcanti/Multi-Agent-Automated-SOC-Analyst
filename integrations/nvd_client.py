@@ -20,19 +20,46 @@ def _get_nvd_api_key() -> Optional[str]:
 def search_cves(
     keyword: str,
     max_results: int = 5,
+    pub_start_date: Optional[str] = None,
+    pub_end_date: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Busca CVEs en NVD usando keywordSearch.
     Devuelve una lista de dicts simplificados: id, cvss, description.
+    
+    Args:
+        keyword: Keyword to search for
+        max_results: Maximum number of results to return
+        pub_start_date: Start date for publication date filter (ISO 8601 format: YYYY-MM-DDTHH:MM:SS.000)
+        pub_end_date: End date for publication date filter (ISO 8601 format: YYYY-MM-DDTHH:MM:SS.000)
     """
-
+    from datetime import datetime, timedelta
+    
     params = {
         "keywordSearch": keyword,
         "resultsPerPage": max_results,
     }
+    
+    # Add date filtering - default to last 10 years if not specified
+    now = datetime.now()
+    
+    if pub_start_date:
+        params["pubStartDate"] = pub_start_date
+    else:
+        # Default: last 10 years
+        ten_years_ago = now - timedelta(days=365*10)
+        params["pubStartDate"] = ten_years_ago.strftime("%Y-%m-%dT00:00:00.000")
+    
+    if pub_end_date:
+        params["pubEndDate"] = pub_end_date
+    else:
+        # Default: now
+        params["pubEndDate"] = now.strftime("%Y-%m-%dT23:59:59.999")
 
     api_key = _get_nvd_api_key()
-    headers = {}
+    headers = {
+        "User-Agent": "SOC-MultiAgent-Assistant/1.0"
+    }
     if api_key:
         headers["apiKey"] = api_key
 

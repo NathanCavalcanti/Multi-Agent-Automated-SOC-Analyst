@@ -14,6 +14,7 @@ A fully functional, terminal-based **Security Operations Center (SOC) Multi-Agen
 ## ✨ Key Features
 
 - 🔍 **IOC Extraction** - Automatically identifies IPs, domains, URLs, file hashes, emails, and file paths
+- 🦠 **VirusTotal Integration** - Automated hash analysis with threat intelligence enrichment
 - 🎯 **MITRE ATT&CK Mapping** - Maps techniques validated against official Enterprise ATT&CK framework
 - 🔐 **Real CVE Intelligence** - Fetches actual vulnerabilities from **NVD API** (no hallucinations)
 - 📋 **DFIR Planning** - Generates investigation and containment action plans
@@ -32,7 +33,8 @@ A fully functional, terminal-based **Security Operations Center (SOC) Multi-Agen
 - **Python 3.12+**
 - **Groq API Key** free tier available at [console.groq.com](https://console.groq.com)
 - **Gemini API Key** free tier available at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-- **NVD API Key**: NVD API Key for higher rate limits [nvd.nist.gov/developers](https://nvd.nist.gov/developers/request-an-api-key)
+- **NVD API Key** (Optional): For higher rate limits [nvd.nist.gov/developers](https://nvd.nist.gov/developers/request-an-api-key)
+- **VirusTotal API Key** (Optional): For hash analysis [virustotal.com/gui/my-apikey](https://www.virustotal.com/gui/my-apikey)
 
 ---
 
@@ -74,9 +76,17 @@ copy .env.example .env   # Windows
 ```
 
 **Required in `.env`:**
+
 ```bash
 GROQ_API_KEY=your_groq_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+**Optional (for enhanced features):**
+
+```bash
+NVD_API_KEY=your_nvd_api_key_here  # Higher CVE query rate limits
+VIRUSTOTAL_API_KEY=your_vt_api_key_here  # Automated hash analysis
 ```
 
 ---
@@ -89,7 +99,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 python app/main.py
 ```
 
-### Example [Workflow](/docs/workflow.md) 
+### Example [Workflow](/docs/workflow.md)
 
 1. **Paste incident data** (logs, alerts, event descriptions)
 2. **Type `END`** to signal completion
@@ -97,6 +107,7 @@ python app/main.py
 4. **Review output** in console + `/output/` directory
 
 **Example Input:**
+
 ```
 Suspicious PowerShell execution detected:
 powershell -enc KABDA...
@@ -106,8 +117,9 @@ END
 ```
 
 **Output:**
+
 - Console: Structured SOC incident report
-- Files: 
+- Files:
   - `output/incident_report_YYYY-MM-DD_HH-MM-SS.txt`
   - `output/incident_report_YYYY-MM-DD_HH-MM-SS.json`
 
@@ -116,12 +128,13 @@ END
 ## 🛠️ Technology Stack
 
 - **Orchestration**: [LangGraph](https://github.com/langchain-ai/langgraph) (Multi-agent state management)
-- **LLM**: 
+- **LLM**:
   - **Gemini 2.0 Flash** - Data extraction agents (IOC, MITRE, CVE)
   - **Groq Llama 3.3 70B** - Analysis agents (Investigation, Reports)
-- **Data Sources**: 
+- **Data Sources**:
   - [MITRE ATT&CK](https://attack.mitre.org/) Enterprise framework
   - [NVD API 2.0](https://nvd.nist.gov/developers) for CVE data
+  - [VirusTotal API v3](https://developers.virustotal.com/reference/overview) for hash intelligence
 - **Framework**: Python 3.12+ with Pydantic, LangChain
 
 ---

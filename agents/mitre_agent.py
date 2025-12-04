@@ -32,8 +32,16 @@ def run_mitre_agent(
         "You are a cybersecurity analyst expert in MITRE ATT&CK. "
         "Based on the incident description and IOCs, identify the most probable techniques "
         "and sub-techniques (ID Txxxx / Txxxx.xx). "
-        "Do NOT invent IDs; use only valid MITRE ATT&CK Enterprise IDs. "
-        "Do not provide names or tactics, only IDs and justification: the system will enrich them later."
+        "\n\nCRITICAL RULES:\n"
+        "1. Do NOT invent IDs; use only valid MITRE ATT&CK Enterprise IDs.\n"
+        "2. ONLY map techniques if there is DIRECT EVIDENCE in the incident text.\n"
+        "3. DO NOT map T1027.003 (Steganography) to ZIP files - ZIP is compression, NOT steganography.\n"
+        "4. DO NOT map T1071 (C2) or T1071.001 (Web Protocols) unless there is evidence of BEACONING or persistent communication.\n"
+        "5. DO NOT map T1190 (Exploit Public-Facing Application) unless there is evidence of exploitation (RCE, injection, etc).\n"
+        "6. For file downloads, prefer T1105 (Ingress Tool Transfer).\n"
+        "7. For phishing with malicious links, use T1566.002 only if there is evidence.\n"
+        "8. If the incident involves ransomware execution, focus on execution techniques (T1204, T1059) and impact (T1486).\n"
+        "\nDo not provide names or tactics, only IDs and justification: the system will enrich them later."
     )
 
     user_prompt = f"""
@@ -45,13 +53,21 @@ Extracted IOCs (JSON):
 
 {ioc_snippet}
 
+IMPORTANT GUIDELINES:
+- Only map techniques with DIRECT evidence from the incident
+- For downloads: use T1105 (Ingress Tool Transfer)
+- For ZIP files: use T1560.001 (Archive via Utility) if relevant, NOT T1027.003
+- For C2: ONLY if there's evidence of beaconing/persistent communication
+- For exploitation: ONLY if there's evidence of RCE, injection, or vulnerability exploitation
+- For ransomware execution: focus on T1204 (User Execution), T1059 (Command/Scripting), T1486 (Data Encrypted for Impact)
+
 Return ONLY a valid JSON with the following structure:
 
 {{
   "techniques": [
     {{
       "id": "T1059.001",
-      "justification": "Briefly explain why this technique applies"
+      "justification": "Briefly explain why this technique applies based on EVIDENCE"
     }}
   ],
   "summary": "Summary in 3-5 lines of the observed MITRE pattern."

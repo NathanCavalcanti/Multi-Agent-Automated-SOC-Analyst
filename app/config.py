@@ -44,6 +44,10 @@ except ImportError:
         "Run: pip install google-generativeai"
     )
 
+# ===== VirusTotal Configuration (Optional) =====
+VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
+# Note: VirusTotal is optional. If not configured, hash analysis will be skipped.
+
 
 def call_llm(
     messages: List[Dict[str, str]],

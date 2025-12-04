@@ -4,6 +4,7 @@ import json
 from typing import Any, Dict
 
 from app.config import call_llm, extract_json_block
+from integrations.virustotal_client import get_file_report
 
 
 def run_ioc_agent(incident_text: str) -> Dict[str, Any]:
@@ -57,6 +58,10 @@ Return ONLY a valid JSON with the following structure:
         json_str = extract_json_block(response)
         parsed = json.loads(json_str)
         parsed = validate_iocs(parsed)
+        
+        # Enrich with VirusTotal
+        parsed = enrich_with_virustotal(parsed)
+        
     except json.JSONDecodeError:
         parsed = {
             "parse_error": "LLM did not return valid JSON",
@@ -109,4 +114,63 @@ def validate_iocs(iocs: Dict[str, Any]) -> Dict[str, Any]:
             
             iocs["hashes"][hash_type] = valid_hashes
 
+    return iocs
+
+
+def enrich_with_virustotal(iocs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Checks extracted hashes against VirusTotal.
+    Limits to top 3 hashes to avoid rate limits.
+    """
+    if "hashes" not in iocs:
+        return iocs
+        
+    vt_results = []
+    hashes_checked = 0
+    max_hashes = 3
+    
+    # Flatten hash list
+    all_hashes = []
+    for hash_type, hash_list in iocs.get("hashes", {}).items():
+        if isinstance(hash_list, list):
+            all_hashes.extend(hash_list)
+            
+    # Remove duplicates
+    all_hashes = list(set(all_hashes))
+    
+    if not all_hashes:
+        return iocs
+    
+    print(f"[VirusTotal] Checking {min(len(all_hashes), max_hashes)} hash(es)...")
+    
+    for h in all_hashes:
+        if hashes_checked >= max_hashes:
+            break
+            
+        report = get_file_report(h)
+        if report.get("error"):
+            print(f"[VirusTotal] Error for hash {h[:16]}...: {report.get('error')}")
+            continue
+            
+        if report:
+            vt_results.append({
+                "hash": h,
+                "malicious": report.get("malicious_count", 0),
+                "total": report.get("total_engines", 0),
+                "permalink": report.get("permalink", ""),
+                "names": report.get("names", []),
+                "threat_label": report.get("threat_label", ""),
+                "sandbox_verdicts": report.get("sandbox_verdicts", []),
+                "sigma_rules": report.get("sigma_rules", []),
+                "signature": report.get("signature_description", "")
+            })
+            hashes_checked += 1
+            print(f"[VirusTotal] ✓ Hash {h[:16]}... - Detection: {report.get('malicious_count', 0)}/{report.get('total_engines', 0)}")
+            
+    if vt_results:
+        iocs["virustotal_results"] = vt_results
+        print(f"[VirusTotal] Added {len(vt_results)} result(s) to IOCs")
+    else:
+        print("[VirusTotal] No results added (check API key or errors above)")
+        
     return iocs
