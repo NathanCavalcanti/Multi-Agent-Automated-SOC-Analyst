@@ -11,8 +11,8 @@ NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 
 def _get_nvd_api_key() -> Optional[str]:
     """
-    Devuelve la API key de NVD desde la variable de entorno NVD_API_KEY.
-    Es opcional: sin key hay más rate-limit, pero para laboratorio es suficiente.
+    Returns the NVD API key from the NVD_API_KEY environment variable.
+    Optional: without key there are more rate-limits, but it's sufficient for lab use.
     """
     return os.getenv("NVD_API_KEY")
 
@@ -24,8 +24,8 @@ def search_cves(
     pub_end_date: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Busca CVEs en NVD usando keywordSearch.
-    Devuelve una lista de dicts simplificados: id, cvss, description.
+    Searches for CVEs in NVD using keywordSearch.
+    Returns a list of simplified dicts: id, cvss, description.
     
     Args:
         keyword: Keyword to search for
@@ -40,21 +40,22 @@ def search_cves(
         "resultsPerPage": max_results,
     }
     
-    # Add date filtering - default to last 10 years if not specified
-    now = datetime.now()
-    
-    if pub_start_date:
-        params["pubStartDate"] = pub_start_date
-    else:
-        # Default: last 10 years
-        ten_years_ago = now - timedelta(days=365*10)
-        params["pubStartDate"] = ten_years_ago.strftime("%Y-%m-%dT00:00:00.000")
-    
-    if pub_end_date:
-        params["pubEndDate"] = pub_end_date
-    else:
-        # Default: now
-        params["pubEndDate"] = now.strftime("%Y-%m-%dT23:59:59.999")
+    # NVD API has a strict limit of 120 days for date ranges.
+    # We only apply date filters if explicitly provided AND within the limit.
+    # Otherwise, we rely on keyword search (which returns most recent by default).
+    if pub_start_date and pub_end_date:
+        try:
+            start_dt = datetime.strptime(pub_start_date, "%Y-%m-%dT%H:%M:%S.%f")
+            end_dt = datetime.strptime(pub_end_date, "%Y-%m-%dT%H:%M:%S.%f")
+            delta = end_dt - start_dt
+            
+            if delta.days <= 120:
+                params["pubStartDate"] = pub_start_date
+                params["pubEndDate"] = pub_end_date
+            # else: Range > 120 days, skip date params to avoid 404 error
+        except ValueError:
+            # Date format error, skip filtering
+            pass
 
     api_key = _get_nvd_api_key()
     headers = {
@@ -85,7 +86,7 @@ def search_cves(
         metrics = cve_data.get("metrics", {})
         cvss = None
 
-        # NVD API 2.0: CVSS en distintas claves según versión
+        # NVD API 2.0: CVSS in different keys depending on version
         for key in ("cvssMetricV31", "cvssMetricV30", "cvssMetricV2"):
             if key in metrics and metrics[key]:
                 cvss = metrics[key][0].get("cvssData", {}).get("baseScore")

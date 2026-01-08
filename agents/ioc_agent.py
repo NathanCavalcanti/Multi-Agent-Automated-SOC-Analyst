@@ -4,7 +4,8 @@ import json
 from typing import Any, Dict
 
 from app.config import call_llm, extract_json_block
-from integrations.virustotal_client import get_file_report
+from integrations.virustotal_client import get_file_report, scan_url, get_ip_report, get_domain_report
+import time
 
 
 def run_ioc_agent(incident_text: str) -> Dict[str, Any]:
@@ -51,7 +52,7 @@ Return ONLY a valid JSON with the following structure:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        provider="gemini"  # Gemini for data extraction
+        provider="groq"  # Groq for data extraction
     )
 
     try:
@@ -119,58 +120,166 @@ def validate_iocs(iocs: Dict[str, Any]) -> Dict[str, Any]:
 
 def enrich_with_virustotal(iocs: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Checks extracted hashes against VirusTotal.
-    Limits to top 3 hashes to avoid rate limits.
+    Checks extracted IOCs against VirusTotal:
+    - Hashes (max 3)
+    - IPs (public only, max 3)
+    - URLs (max 3)
+    - Domains (max 3)
+    
+    Rate limiting: 15 seconds between requests (4 req/min for free tier)
     """
-    if "hashes" not in iocs:
-        return iocs
+    # === HASHES ===
+    if "hashes" in iocs:
+        vt_results = []
+        hashes_checked = 0
+        max_hashes = 3
         
-    vt_results = []
-    hashes_checked = 0
-    max_hashes = 3
-    
-    # Flatten hash list
-    all_hashes = []
-    for hash_type, hash_list in iocs.get("hashes", {}).items():
-        if isinstance(hash_list, list):
-            all_hashes.extend(hash_list)
+        # Flatten hash list
+        all_hashes = []
+        for hash_type, hash_list in iocs.get("hashes", {}).items():
+            if isinstance(hash_list, list):
+                all_hashes.extend(hash_list)
+                
+        # Remove duplicates
+        all_hashes = list(set(all_hashes))
+        
+        if all_hashes:
+            print(f"[VirusTotal] Checking {min(len(all_hashes), max_hashes)} hash(es)...")
             
-    # Remove duplicates
-    all_hashes = list(set(all_hashes))
+            for h in all_hashes:
+                if hashes_checked >= max_hashes:
+                    break
+                    
+                report = get_file_report(h)
+                if report.get("error"):
+                    print(f"[VirusTotal] Error for hash {h[:16]}...: {report.get('error')}")
+                    continue
+                    
+                if report:
+                    vt_results.append({
+                        "hash": h,
+                        "malicious": report.get("malicious_count", 0),
+                        "total": report.get("total_engines", 0),
+                        "permalink": report.get("permalink", ""),
+                        "names": report.get("names", []),
+                        "threat_label": report.get("threat_label", ""),
+                        "sandbox_verdicts": report.get("sandbox_verdicts", []),
+                        "sigma_rules": report.get("sigma_rules", []),
+                        "signature": report.get("signature_description", "")
+                    })
+                    hashes_checked += 1
+                    print(f"[VirusTotal] ✓ Hash {h[:16]}... - Detection: {report.get('malicious_count', 0)}/{report.get('total_engines', 0)}")
+                    time.sleep(15)  # Rate limiting
+                    
+            if vt_results:
+                iocs["virustotal_results"] = vt_results
+                print(f"[VirusTotal] Added {len(vt_results)} hash result(s)")
     
-    if not all_hashes:
-        return iocs
-    
-    print(f"[VirusTotal] Checking {min(len(all_hashes), max_hashes)} hash(es)...")
-    
-    for h in all_hashes:
-        if hashes_checked >= max_hashes:
-            break
+    # === IPs ===
+    if "ips" in iocs and isinstance(iocs["ips"], list):
+        vt_ip_results = []
+        ips_checked = 0
+        max_ips = 3
+        
+        for ip in iocs["ips"]:
+            if ips_checked >= max_ips:
+                break
             
-        report = get_file_report(h)
-        if report.get("error"):
-            print(f"[VirusTotal] Error for hash {h[:16]}...: {report.get('error')}")
-            continue
+            # Skip private IPs
+            if ip.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", 
+                             "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
+                             "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.",
+                             "127.", "169.254.")):
+                continue
             
-        if report:
-            vt_results.append({
-                "hash": h,
+            print(f"[VirusTotal] Checking IP {ip}...")
+            report = get_ip_report(ip)
+            
+            if report.get("error"):
+                print(f"[VirusTotal] Error for IP {ip}: {report.get('error')}")
+                continue
+            
+            vt_ip_results.append({
+                "ip": ip,
                 "malicious": report.get("malicious_count", 0),
                 "total": report.get("total_engines", 0),
-                "permalink": report.get("permalink", ""),
-                "names": report.get("names", []),
-                "threat_label": report.get("threat_label", ""),
-                "sandbox_verdicts": report.get("sandbox_verdicts", []),
-                "sigma_rules": report.get("sigma_rules", []),
-                "signature": report.get("signature_description", "")
+                "reputation": report.get("reputation", 0),
+                "country": report.get("country", "Unknown"),
+                "asn": report.get("asn", "Unknown"),
+                "as_owner": report.get("as_owner", "Unknown"),
+                "permalink": report.get("permalink", "")
             })
-            hashes_checked += 1
-            print(f"[VirusTotal] ✓ Hash {h[:16]}... - Detection: {report.get('malicious_count', 0)}/{report.get('total_engines', 0)}")
+            ips_checked += 1
+            print(f"[VirusTotal] ✓ IP {ip} - Detection: {report.get('malicious_count', 0)}/{report.get('total_engines', 0)}, Reputation: {report.get('reputation', 0)}")
+            time.sleep(15)  # Rate limiting
+        
+        if vt_ip_results:
+            iocs["virustotal_ip_results"] = vt_ip_results
+            print(f"[VirusTotal] Added {len(vt_ip_results)} IP result(s)")
+    
+    # === URLs ===
+    if "urls" in iocs and isinstance(iocs["urls"], list):
+        vt_url_results = []
+        urls_checked = 0
+        max_urls = 3
+        
+        for url in iocs["urls"]:
+            if urls_checked >= max_urls:
+                break
             
-    if vt_results:
-        iocs["virustotal_results"] = vt_results
-        print(f"[VirusTotal] Added {len(vt_results)} result(s) to IOCs")
-    else:
-        print("[VirusTotal] No results added (check API key or errors above)")
+            print(f"[VirusTotal] Scanning URL {url[:50]}...")
+            report = scan_url(url)
+            
+            if report.get("error"):
+                print(f"[VirusTotal] Error for URL: {report.get('error')}")
+                continue
+            
+            vt_url_results.append({
+                "url": url,
+                "malicious": report.get("malicious_count", 0),
+                "total": report.get("total_engines", 0),
+                "categories": report.get("categories", {}),
+                "permalink": report.get("permalink", "")
+            })
+            urls_checked += 1
+            print(f"[VirusTotal] ✓ URL - Detection: {report.get('malicious_count', 0)}/{report.get('total_engines', 0)}")
+            time.sleep(15)  # Rate limiting
+        
+        if vt_url_results:
+            iocs["virustotal_url_results"] = vt_url_results
+            print(f"[VirusTotal] Added {len(vt_url_results)} URL result(s)")
+    
+    # === DOMAINS ===
+    if "domains" in iocs and isinstance(iocs["domains"], list):
+        vt_domain_results = []
+        domains_checked = 0
+        max_domains = 3
+        
+        for domain in iocs["domains"]:
+            if domains_checked >= max_domains:
+                break
+            
+            print(f"[VirusTotal] Checking domain {domain}...")
+            report = get_domain_report(domain)
+            
+            if report.get("error"):
+                print(f"[VirusTotal] Error for domain {domain}: {report.get('error')}")
+                continue
+            
+            vt_domain_results.append({
+                "domain": domain,
+                "malicious": report.get("malicious_count", 0),
+                "total": report.get("total_engines", 0),
+                "categories": report.get("categories", []),
+                "registrar": report.get("registrar", "Unknown"),
+                "permalink": report.get("permalink", "")
+            })
+            domains_checked += 1
+            print(f"[VirusTotal] ✓ Domain {domain} - Detection: {report.get('malicious_count', 0)}/{report.get('total_engines', 0)}")
+            time.sleep(15)  # Rate limiting
+        
+        if vt_domain_results:
+            iocs["virustotal_domain_results"] = vt_domain_results
+            print(f"[VirusTotal] Added {len(vt_domain_results)} domain result(s)")
         
     return iocs

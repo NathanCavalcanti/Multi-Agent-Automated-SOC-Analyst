@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Optional
 
-from app.config import call_llm, extract_json_block
+from app.config import call_llm, extract_json_block, GROQ_MODEL_ANALYSIS
 
 
 def run_investigation_agent(
@@ -89,7 +89,9 @@ Return ONLY a valid JSON with the following structure:
         [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
-        ]
+        ],
+        provider="groq",
+        model=GROQ_MODEL_ANALYSIS  # Analysis model for complex reasoning
     )
 
     try:

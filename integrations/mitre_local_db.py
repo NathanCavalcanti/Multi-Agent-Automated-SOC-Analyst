@@ -38,7 +38,7 @@ def _fetch_remote_bundle() -> Optional[Dict[str, Any]]:
     """
     print(f"[MITRE] Attempting to download Enterprise ATT&CK from GitHub:\n        {MITRE_URL}")
     try:
-        resp = requests.get(MITRE_URL, timeout=60)
+        resp = requests.get(MITRE_URL, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as e:
         print(f"[MITRE] Warning: could not download ATT&CK from GitHub ({e}).")
@@ -257,3 +257,29 @@ def enrich_techniques(
             )
 
     return enriched
+
+
+def validate_technique_id(tech_id: str) -> bool:
+    """
+    Validates if a technique ID exists in the MITRE ATT&CK database.
+    
+    Args:
+        tech_id: Technique ID (e.g., 'T1059.001')
+    
+    Returns:
+        True if the technique exists, False otherwise
+    """
+    _load_data()
+    return tech_id in _TECHNIQUES_BY_ID
+
+
+def get_all_technique_ids() -> List[str]:
+    """
+    Returns a list of all valid technique IDs in the database.
+    Useful for debugging and validation.
+    
+    Returns:
+        List of technique IDs (e.g., ['T1059', 'T1059.001', ...])
+    """
+    _load_data()
+    return list(_TECHNIQUES_BY_ID.keys())

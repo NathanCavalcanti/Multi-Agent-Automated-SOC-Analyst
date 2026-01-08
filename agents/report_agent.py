@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Optional, List
 
-from app.config import call_llm, extract_json_block
+from app.config import call_llm, extract_json_block, GROQ_MODEL_ANALYSIS
 
 
 def run_report_agent(
@@ -37,7 +37,12 @@ def run_report_agent(
         "You are an L2 SOC Analyst responsible for writing incident reports. "
         "You must generate a clear, structured, and actionable report for a SOC environment, "
         "separating an executive section (for managers) and a technical section (for analysts). "
-        "Use a professional and concise tone."
+        "Use a professional and concise tone.\n\n"
+        "CRITICAL REQUIREMENTS:\n"
+        "1. ALL timestamps MUST be in UTC format (YYYY-MM-DDTHH:MM:SSZ). Example: '2025-12-07T18:30:00Z'\n"
+        "2. DO NOT use local time or omit the 'Z' suffix.\n"
+        "3. Include specific attack details: HTTP methods (GET/POST), failed vs successful attempts, ports, user-agents.\n"
+        "4. Link each malicious IP to specific threat intelligence findings."
     )
 
     user_prompt = f"""
@@ -75,6 +80,16 @@ Generate ONLY a valid JSON with the following structure:
       "event": "First SIEM alert for suspicious traffic to malicious IP."
     }}
   ],
+  "involved_parties": {{
+    "affected_users": ["List of victim accounts/users"],
+    "suspicious_accounts": ["List of suspicious/compromised accounts"],
+    "threat_actor": {{
+      "attribution": "Threat group name or 'Unknown'",
+      "confidence": "high|medium|low",
+      "indicators": ["List of attribution indicators based on TTPs"]
+    }},
+    "incident_responders": ["SOC team members handling the incident"]
+  }},
   "ioc_section": {{
     "ips": [],
     "domains": [],
@@ -134,7 +149,9 @@ Generate ONLY a valid JSON with the following structure:
         [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
-        ]
+        ],
+        provider="groq",
+        model=GROQ_MODEL_ANALYSIS  # Analysis model for complex reasoning
     )
 
     try:
@@ -165,6 +182,7 @@ def render_report_text(report: Dict[str, Any]) -> str:
     exec_sum = report.get("executive_summary", "")
     tech_sum = report.get("technical_summary", "")
     timeline = report.get("timeline", [])
+    involved_parties = report.get("involved_parties", {})
     ioc_sec = report.get("ioc_section", {})
     mitre_map = report.get("mitre_mapping", [])
     cve_sec = report.get("cve_section", [])
@@ -205,6 +223,32 @@ def render_report_text(report: Dict[str, Any]) -> str:
             ts = ev.get("timestamp", "N/A")
             ev_desc = ev.get("event", "N/A")
             lines.append(f"  - [{ts}] {ev_desc}")
+    else:
+        lines.append("  - N/A")
+    lines.append("")
+
+    # Involved Parties (5W1H - Who)
+    lines.append(">> Involved Parties (5W1H - Who)")
+    if involved_parties:
+        affected = involved_parties.get("affected_users", [])
+        suspicious = involved_parties.get("suspicious_accounts", [])
+        threat_actor = involved_parties.get("threat_actor", {})
+        responders = involved_parties.get("incident_responders", [])
+        
+        lines.append(f"  Affected Users     : {', '.join(affected) or 'N/A'}")
+        lines.append(f"  Suspicious Accounts: {', '.join(suspicious) or 'N/A'}")
+        
+        if threat_actor:
+            attribution = threat_actor.get("attribution", "Unknown")
+            confidence = threat_actor.get("confidence", "N/A")
+            indicators = threat_actor.get("indicators", [])
+            lines.append(f"  Threat Actor       : {attribution} [Confidence: {confidence}]")
+            if indicators:
+                lines.append("    Attribution Indicators:")
+                for ind in indicators:
+                    lines.append(f"      - {ind}")
+        
+        lines.append(f"  Incident Responders: {', '.join(responders) or 'N/A'}")
     else:
         lines.append("  - N/A")
     lines.append("")

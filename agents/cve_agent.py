@@ -70,7 +70,7 @@ IMPORTANT:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        provider="gemini"  # Gemini for keyword extraction
+        provider="groq"  # Gemini for keyword extraction
     )
 
     try:
@@ -200,7 +200,7 @@ Is this CVE relevant to the incident? Answer with ONLY a JSON:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            provider="gemini"
+            provider="groq"
         )
         
         json_str = extract_json_block(response)

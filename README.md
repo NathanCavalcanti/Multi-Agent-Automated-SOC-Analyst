@@ -13,12 +13,13 @@ A fully functional, terminal-based **Security Operations Center (SOC) Multi-Agen
 
 ## ✨ Key Features
 
-- 🔍 **IOC Extraction** - Automatically identifies IPs, domains, URLs, file hashes, emails, and file paths
+- 🔍 **IOC Extraction** - Automatically identifies IPs, domains, URLs, file hashes, emails, file paths, and user accounts
 - 🦠 **VirusTotal Integration** - Automated hash analysis with threat intelligence enrichment
 - 🎯 **MITRE ATT&CK Mapping** - Maps techniques validated against official Enterprise ATT&CK framework
 - 🔐 **Real CVE Intelligence** - Fetches actual vulnerabilities from **NVD API** (no hallucinations)
 - 📋 **DFIR Planning** - Generates investigation and containment action plans
 - 📊 **SOC-Grade Reports** - Produces structured JSON and human-readable text reports
+- 📝 **5W1H Framework** - Complete incident documentation following industry best practices (NIST, SANS, ISO 27035)
 - 💾 **Persistent Output** - All reports saved with timestamps under `/output/`
 - 🔄 **Multi-Agent Orchestration** - LangGraph pipeline with 5 specialized agents
 
@@ -153,4 +154,4 @@ This project is licensed under the MIT License - feel free to use it for learnin
 
 ---
 
-**Version**: 1.0.4 | **Status**: Production-ready for portfolio demonstration
+**Version**: 1.0.5 | **Status**: Production-ready for portfolio demonstration

@@ -80,7 +80,7 @@ Return ONLY a valid JSON with the following structure:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        provider="gemini"  # Gemini for technique extraction
+        provider="groq"  # Groq for technique extraction
     )
 
     try:
@@ -114,7 +114,23 @@ Return ONLY a valid JSON with the following structure:
     # 2) Enrich against local official MITRE DB
     enriched = enrich_techniques(norm_techniques)
 
+    # 3) STRICT VALIDATION: Filter out invalid techniques (hallucinations)
+    valid_techniques = [t for t in enriched if t.get("source") == "Enterprise MITRE"]
+    rejected_techniques = [t for t in enriched if t.get("source") != "Enterprise MITRE"]
+
+    # Log rejected techniques for debugging
+    if rejected_techniques:
+        print(f"\n[MITRE] ⚠️  Rejected {len(rejected_techniques)} invalid technique(s):")
+        for t in rejected_techniques:
+            print(f"  ❌ {t.get('id')}: {t.get('justification')[:80]}...")
+        print(f"[MITRE] ✅ Accepted {len(valid_techniques)} valid technique(s)\n")
+
     return {
-        "techniques": enriched,
+        "techniques": valid_techniques,  # Only return validated techniques
         "summary": summary,
+        "validation_stats": {
+            "total_proposed": len(enriched),
+            "valid": len(valid_techniques),
+            "rejected": len(rejected_techniques),
+        },
     }

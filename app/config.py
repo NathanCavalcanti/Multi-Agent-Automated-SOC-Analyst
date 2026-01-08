@@ -21,28 +21,31 @@ if not GROQ_API_KEY:
         "Add it to your environment or to the .env file in the project root."
     )
 
-GROQ_MODEL = os.getenv("GROQ_MODEL")
+# Default model for general agents (IOC, MITRE, CVE)
+GROQ_MODEL_DEFAULT = os.getenv("GROQ_MODEL_DEFAULT")
+
+# Analysis model for complex agents (Investigation, Report)
+GROQ_MODEL_ANALYSIS = os.getenv("GROQ_MODEL_ANALYSIS")
+
+# Legacy support: GROQ_MODEL falls back to default
+GROQ_MODEL = os.getenv("GROQ_MODEL", GROQ_MODEL_DEFAULT)
+
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# ===== GEMINI Configuration =====
+# ===== GEMINI Configuration (Optional - Fallback only) =====
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise RuntimeError(
-        "GEMINI_API_KEY is not configured. "
-        "Add it to your environment or to the .env file in the project root."
-    )
-
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 
-# Import Gemini SDK
-try:
-    import google.generativeai as genai
-    genai.configure(api_key=GEMINI_API_KEY)
-except ImportError:
-    raise RuntimeError(
-        "google-generativeai is not installed. "
-        "Run: pip install google-generativeai"
-    )
+# Import Gemini SDK only if API key is configured
+if GEMINI_API_KEY:
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+    except ImportError:
+        print("[WARNING] google-generativeai not installed. Gemini fallback disabled.")
+        GEMINI_API_KEY = None
+else:
+    print("[INFO] GEMINI_API_KEY not configured. Gemini fallback disabled.")
 
 # ===== VirusTotal Configuration (Optional) =====
 VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
@@ -57,21 +60,31 @@ def call_llm(
     max_tokens: int = 2048,
 ) -> str:
     """
-    Wraps LLM calls (Groq or Gemini) and adds error handling
-    to show clear messages (rate limit, API errors, etc.).
+    Wraps LLM calls (Groq or Gemini) with automatic fallback and error handling.
     
     Args:
         messages: List of messages in format [{"role": "system|user|assistant", "content": "..."}]
-        provider: "groq" or "gemini"
+        provider: "groq" or "gemini" (default: "groq")
         model: Specific model to use (if None, uses provider default)
         temperature: Generation temperature
         max_tokens: Max output tokens
     
     Returns:
         LLM response as string
+        
+    Raises:
+        RuntimeError: If both Groq and Gemini fail
     """
     if provider == "groq":
-        return _call_groq(messages, model or GROQ_MODEL, temperature, max_tokens)
+        try:
+            return _call_groq(messages, model or GROQ_MODEL, temperature, max_tokens)
+        except RuntimeError as e:
+            # Fallback to Gemini if Groq fails and Gemini is configured
+            if GEMINI_API_KEY and "LLM_RATE_LIMIT" in str(e):
+                print(f"[FALLBACK] Groq rate limit reached. Falling back to Gemini...")
+                return _call_gemini(messages, GEMINI_MODEL, temperature, max_tokens)
+            else:
+                raise
     elif provider == "gemini":
         return _call_gemini(messages, model or GEMINI_MODEL, temperature, max_tokens)
     else:
