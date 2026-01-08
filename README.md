@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-v1.0-success.svg)
 
-A fully functional, terminal-based **Security Operations Center (SOC) Multi-Agent AI Assistant** built with **LangGraph**, **LangChain**, and **Groq Llama 3.3**. This system performs automated security incident triage including IOC extraction, MITRE ATT&CK technique mapping, CVE retrieval, and comprehensive incident reporting.
+A fully functional, terminal-based **Security Operations Center (SOC) Multi-Agent AI Assistant** built with **LangGraph**, **LangChain**, and **IA Agents Free-tier**. This system performs automated security incident triage including IOC extraction, MITRE ATT&CK technique mapping, CVE retrieval, and comprehensive incident reporting.
 
 > 🎓 **Educational & Portfolio Project**: Demonstrates advanced AI agent orchestration, SOC automation workflows, and integration with real security data sources (NVD, MITRE ATT&CK).
 
@@ -97,7 +97,7 @@ VIRUSTOTAL_API_KEY=your_vt_api_key_here  # Automated hash analysis
 ### Run the CLI Assistant
 
 ```bash
-python -m app.main
+python app/main.py
 ```
 
 ### Example [Workflow](/docs/workflow.md)
@@ -154,4 +154,4 @@ This project is licensed under the MIT License - feel free to use it for learnin
 
 ---
 
-**Version**: 1.0.5 | **Status**: Production-ready for portfolio demonstration
+**Version**: 1.1.0 | **Status**: Production-ready for portfolio demonstration
