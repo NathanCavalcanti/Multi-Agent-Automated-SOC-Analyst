@@ -3,12 +3,12 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
-from typing import Dict, Any
 from dotenv import load_dotenv
+load_dotenv()
 
 from graph.graph_builder import create_graph
-
-load_dotenv()
+from graph.state import SOCState
+from typing import Dict, Any
 
 app = FastAPI(
     title="SOC Multi-Agent System API",

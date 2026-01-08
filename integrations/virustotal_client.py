@@ -1,8 +1,9 @@
 # integrations/virustotal_client.py
 from __future__ import annotations
 
+import os
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -166,6 +167,9 @@ def scan_url(url: str) -> Dict[str, Any]:
         
         attributes = analysis_data.get("data", {}).get("attributes", {})
         stats = attributes.get("stats", {})
+        
+        # Extract URL ID for permalink
+        url_id = attributes.get("url", "")
         
         return {
             "malicious_count": stats.get("malicious", 0),
