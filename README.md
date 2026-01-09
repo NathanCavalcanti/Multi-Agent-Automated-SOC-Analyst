@@ -97,7 +97,7 @@ VIRUSTOTAL_API_KEY=your_vt_api_key_here  # Automated hash analysis
 ### Run the CLI Assistant
 
 ```bash
-python app/main.py
+python -m app.main
 ```
 
 ### Example [Workflow](/docs/workflow.md)
