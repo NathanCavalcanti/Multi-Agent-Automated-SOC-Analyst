@@ -154,4 +154,4 @@ This project is licensed under the MIT License - feel free to use it for learnin
 
 ---
 
-**Version**: 1.1.0 | **Status**: Production-ready for portfolio demonstration
+**Version**: 1.0.10 | **Status**: Production-ready for portfolio demonstration
